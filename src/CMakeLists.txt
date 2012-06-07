@@ -12,24 +12,24 @@ include_directories(../include)
 #-----------------------------------------------------------------------
 # Build the library
 
-file(GLOB_RECURSE LIBAPPNAME_SRC libAPPNAME/*.c)
+set(LIBCLOGGER_SRC
+    libclogger/foo.c
+)
 
-add_library(libAPPNAME SHARED ${LIBAPPNAME_SRC})
-set_target_properties(libAPPNAME PROPERTIES
-    OUTPUT_NAME appname
+add_library(libclogger SHARED ${LIBCLOGGER_SRC})
+set_target_properties(libclogger PROPERTIES
+    OUTPUT_NAME clogger
     SOVERSION 0.0.0)
-target_link_libraries(libAPPNAME
+target_link_libraries(libclogger
     ${CORK_LIBRARIES}
 )
 
-install(TARGETS libAPPNAME
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib)
+install(TARGETS libclogger DESTINATION lib)
 
 #-----------------------------------------------------------------------
 # Generate the pkg-config file
 
 set(prefix ${CMAKE_INSTALL_PREFIX})
-configure_file(libAPPNAME.pc.in libAPPNAME.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libAPPNAME.pc
+configure_file(clogger.pc.in clogger.pc @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/clogger.pc
         DESTINATION lib/pkgconfig)
