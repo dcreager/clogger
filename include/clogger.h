@@ -8,12 +8,12 @@
  * ----------------------------------------------------------------------
  */
 
-#ifndef CLOGGER_API_H
-#define CLOGGER_API_H
+#ifndef CLOGGER_H
+#define CLOGGER_H
 
 /* Include all of the parts */
 #include <clogger/api.h>
 #include <clogger/error.h>
 #include <clogger/handlers.h>
 
-#endif /* CLOGGER_API_H */
+#endif /* CLOGGER_H */
