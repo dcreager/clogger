@@ -2,7 +2,7 @@
 
 import sys, os
 
-extensions = []
+extensions = ['sphinx.ext.intersphinx']
 source_suffix = '.rst'
 master_doc = 'index'
 project_name = u'Clogger'
