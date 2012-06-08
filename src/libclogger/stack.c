@@ -99,7 +99,6 @@ void
 clog_log_channel(enum clog_level level, const char *channel,
                  const char *format, ...)
 {
-
     if (CORK_LIKELY(level > maximum_level)) {
         /* Skip the message if it's above the requested maximum level */
     } else {

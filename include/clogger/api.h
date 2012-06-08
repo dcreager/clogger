@@ -23,7 +23,8 @@ enum clog_level {
     CLOG_LEVEL_WARNING,
     CLOG_LEVEL_NOTICE,
     CLOG_LEVEL_INFO,
-    CLOG_LEVEL_DEBUG
+    CLOG_LEVEL_DEBUG,
+    CLOG_LEVEL_TRACE
 };
 
 CORK_ATTR_PURE
@@ -105,6 +106,12 @@ clog_log_channel(enum clog_level level, const char *channel,
 #define clog_notice(...)    clog_log(CLOG_LEVEL_NOTICE, __VA_ARGS__)
 #define clog_info(...)      clog_log(CLOG_LEVEL_INFO, __VA_ARGS__)
 #define clog_debug(...)     clog_log(CLOG_LEVEL_DEBUG, __VA_ARGS__)
+
+#if defined(CLOG_TRACE_ENABLED)
+#define clog_trace(...)     clog_log(CLOG_LEVEL_TRACE, __VA_ARGS__)
+#else
+#define clog_trace(...)     /* skip trace messages */
+#endif
 
 void
 clog_set_maximum_level(enum clog_level level);

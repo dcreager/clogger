@@ -55,8 +55,9 @@ each message:
             CLOG_LEVEL_NOTICE
             CLOG_LEVEL_INFO
             CLOG_LEVEL_DEBUG
+            CLOG_LEVEL_TRACE
 
-"Critical" is the most severe; "debug" is the least severe.  It's not possible
+"Critical" is the most severe; "trace" is the least severe.  It's not possible
 to create your own log levels.
 
 
@@ -102,11 +103,36 @@ We provide several functions for producing log messages.
               void clog_notice(const char \*fmt, ...)
               void clog_info(const char \*fmt, ...)
               void clog_debug(const char \*fmt, ...)
+              void clog_trace(const char \*fmt, ...)
 
    Helper functions for generating log levels of a particular severity.  The log
    message's channel will be taken from the :c:data:`CLOG_CHANNEL` macro, which
    you must define.  Calling any of these functions is equivalent to calling
    :c:func:`clog_log` with the respective :c:type:`clog_level` severity level.
+
+   The :c:func:`clog_trace` function deserves special mention; this is the only
+   logging function that can be fully turned off in a release build.  This is
+   intended for messages that would have a noticeable impact on the speed of
+   your code.  The :c:func:`clog_trace` function, by default, will *not* produce
+   any log messages (i.e., it will expand into a no-op).  To enable this
+   function, define the following preprocessor macro:
+
+   .. macro:: CLOG_TRACE_ENABLED
+
+   .. note::
+
+      This macro only affects the :c:func:`clog_trace` function.  If you
+      generate a :c:data:`CLOG_LEVEL_TRACE` message using :c:func:`clog_log` or
+      :c:func:`clog_log_channel`, it will be processed regardless of whether the
+      :c:data:`CLOG_TRACE_ENABLED` macro is defined.
+
+   .. hint::
+
+      You lose some flexibility with trace messages, since if you compile them
+      out of your library or application completely, you cannot turn them back
+      on at runtime if you need to collect more logging data.  Please verify
+      that debug messages would actually be a performance bottleneck before
+      turning them into trace messages.
 
 .. var:: const char \*CLOG_CHANNEL
 

@@ -29,6 +29,8 @@ clog_level_name(enum clog_level level)
             return "INFO";
         case CLOG_LEVEL_DEBUG:
             return "DEBUG";
+        case CLOG_LEVEL_TRACE:
+            return "TRACE";
         default:
             return "unknown level";
     }
@@ -52,6 +54,8 @@ clog_level_name_fixed_width(enum clog_level level)
             return "INFO    ";
         case CLOG_LEVEL_DEBUG:
             return "DEBUG   ";
+        case CLOG_LEVEL_TRACE:
+            return "TRACE   ";
         default:
             return "unknown ";
     }
