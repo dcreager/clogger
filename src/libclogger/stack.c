@@ -96,7 +96,8 @@ clog_set_maximum_level(enum clog_level level)
 }
 
 void
-clog_log(enum clog_level level, const char *format, ...)
+clog_log_channel(enum clog_level level, const char *channel,
+                 const char *format, ...)
 {
 
     if (CORK_LIKELY(level > maximum_level)) {
@@ -106,6 +107,7 @@ clog_log(enum clog_level level, const char *format, ...)
          * handlers. */
         struct clog_message  msg;
         msg.level = level;
+        msg.channel = channel;
         msg.format = format;
         va_start(msg.args, format);
         clog_process_message(&msg);

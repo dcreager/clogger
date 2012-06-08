@@ -37,6 +37,7 @@ clog_level_name_fixed_width(enum clog_level level);
 
 struct clog_message {
     enum clog_level  level;
+    const char  *channel;
     const char  *format;
     va_list  args;
 };
@@ -91,8 +92,12 @@ clog_annotate_message(struct clog_handler *handler, struct clog_message *msg,
                       const char *key, const char *value);
 
 void
-clog_log(enum clog_level level, const char *format, ...)
-    CORK_ATTR_PRINTF(2,3);
+clog_log_channel(enum clog_level level, const char *channel,
+                 const char *format, ...)
+    CORK_ATTR_PRINTF(3,4);
+
+#define clog_log(level, ...) \
+    clog_log_channel((level), CLOG_CHANNEL, __VA_ARGS__)
 
 #define clog_critical(...)  clog_log(CLOG_LEVEL_CRITICAL, __VA_ARGS__)
 #define clog_error(...)     clog_log(CLOG_LEVEL_ERROR, __VA_ARGS__)

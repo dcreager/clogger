@@ -83,11 +83,15 @@ We provide several functions for producing log messages.
    means that it's perfectly fine to pass in stack-allocated or otherwise
    short-lived variables as your parameters.
 
-.. function:: void clog_log(enum clog_level level, const char \*fmt, ...)
+.. function:: void clog_log_channel(enum clog_level level, const char \*channel, const char \*fmt, ...)
+              void clog_log(enum clog_level level, const char \*fmt, ...)
 
-   Generate a log message with a severity given by *level*.  The text of the log
+   Generate a log message with a given severity *level*.  The text of the log
    message is given by the ``printf``-style format string *fmt* and any
-   additional parameters that you provide.
+   additional parameters that you provide.  For the ``_channel`` variant, the
+   log message's channel is given by the *channel* parameter.  For the normal
+   variant, you must define the :c:data:`CLOG_CHANNEL` macro, which will be used
+   as the channel name.
 
    Any errors that occur while processing the log message will be silently
    caught and ignored.
@@ -99,9 +103,18 @@ We provide several functions for producing log messages.
               void clog_info(const char \*fmt, ...)
               void clog_debug(const char \*fmt, ...)
 
-   Helper functions for generating log levels of a particular severity.  Calling
-   any of these functions is equivalent to calling :c:func:`clog_log` with the
-   respective :c:type:`clog_level` severity level.
+   Helper functions for generating log levels of a particular severity.  The log
+   message's channel will be taken from the :c:data:`CLOG_CHANNEL` macro, which
+   you must define.  Calling any of these functions is equivalent to calling
+   :c:func:`clog_log` with the respective :c:type:`clog_level` severity level.
+
+.. var:: const char \*CLOG_CHANNEL
+
+   A macro that's used as the channel name for any log messages created by
+   :c:func:`clog_log`, :c:func:`clog_critical`, :c:func:`clog_error`,
+   :c:func:`clog_warning`, :c:func:`clog_notice`, :c:func:`clog_info`, or
+   :c:func:`clog_debug`.  You are responsible for defining this macro before
+   using any of those functions.
 
 
 Handlers

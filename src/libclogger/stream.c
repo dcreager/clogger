@@ -35,13 +35,6 @@ struct clog_stream_handler {
  * Simple spin-lock
  */
 
-#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
-#define PAUSE() \
-        __asm__ __volatile__ ("pause");
-#else
-#define PAUSE()  /* do nothing */
-#endif
-
 /* Returns true if we've just claimed the lock; false if we already had it. */
 static bool
 clog_stream_handler_claim(struct clog_stream_handler *self)
@@ -56,7 +49,7 @@ clog_stream_handler_claim(struct clog_stream_handler *self)
         /* Someone else holds the lock.  Spin until it looks like it might be
          * free. */
         while (self->active_thread != CORK_THREAD_NONE) {
-            PAUSE();
+            cork_pause();
         }
     }
 
@@ -106,8 +99,9 @@ clog_stream_handler__message(struct clog_handler *vself,
     if (annotations == NULL) {
         annotations = "";
     }
-    cork_buffer_printf(&self->msg_buf, "[%s]%s ",
-                       clog_level_name_fixed_width(msg->level), annotations);
+    cork_buffer_printf(&self->msg_buf, "[%s] %s:%s ",
+                       clog_level_name_fixed_width(msg->level),
+                       msg->channel, annotations);
     cork_buffer_append_vprintf(&self->msg_buf, msg->format, msg->args);
     cork_buffer_append(&self->msg_buf, "\n", 1);
 

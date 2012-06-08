@@ -26,6 +26,8 @@
  * Test data
  */
 
+#define CLOG_CHANNEL "test"
+
 static void
 generate_messages(void)
 {
@@ -36,6 +38,8 @@ generate_messages(void)
     clog_info("Info message");
     clog_debug("Debug message");
 }
+
+#undef CLOG_CHANNEL
 
 static void
 test_process(const char *expected)
@@ -83,9 +87,9 @@ test_thread(const char *expected)
  */
 
 static const char  *EXPECTED_01 =
-    "[CRITICAL] Critical message\n"
-    "[ERROR   ] Error message\n"
-    "[WARNING ] Warning message\n";
+    "[CRITICAL] test: Critical message\n"
+    "[ERROR   ] test: Error message\n"
+    "[WARNING ] test: Warning message\n";
 
 START_TEST(test_process_01)
 {
@@ -113,12 +117,12 @@ END_TEST
  */
 
 static const char  *EXPECTED_02 =
-    "[CRITICAL] Critical message\n"
-    "[ERROR   ] Error message\n"
-    "[WARNING ] Warning message\n"
-    "[NOTICE  ] Notice message\n"
-    "[INFO    ] Info message\n"
-    "[DEBUG   ] Debug message\n";
+    "[CRITICAL] test: Critical message\n"
+    "[ERROR   ] test: Error message\n"
+    "[WARNING ] test: Warning message\n"
+    "[NOTICE  ] test: Notice message\n"
+    "[INFO    ] test: Info message\n"
+    "[DEBUG   ] test: Debug message\n";
 
 START_TEST(test_process_02)
 {
