@@ -175,42 +175,6 @@ stream_consumer_new(FILE *fp, bool should_close)
 
 
 /*-----------------------------------------------------------------------
- * Specialized instance for stderr
- */
-
-static struct stream_consumer  STDERR_CONSUMER = {
-    {
-        stream_consumer__data,
-        stream_consumer__eof,
-        stream_consumer__free
-    },
-    NULL,
-    false
-};
-
-static struct clog_stream_handler  STDERR_HANDLER = {
-    {
-        clog_stream_handler__annotation,
-        clog_stream_handler__message,
-        clog_stream_handler__free,
-        NULL
-    },
-    &STDERR_CONSUMER.parent,
-    CORK_THREAD_NONE,
-    CORK_BUFFER_INIT(),
-    CORK_BUFFER_INIT(),
-    false
-};
-
-struct clog_handler *
-clog_stderr_handler(void)
-{
-    STDERR_CONSUMER.fp = stderr;
-    return &STDERR_HANDLER.parent;
-}
-
-
-/*-----------------------------------------------------------------------
  * Constructors and destructors
  */
 
@@ -235,6 +199,12 @@ clog_stream_handler_new_fp(FILE *fp, bool should_close)
     struct cork_stream_consumer  *consumer =
         stream_consumer_new(fp, should_close);
     return clog_stream_handler_new_consumer(consumer);
+}
+
+struct clog_handler *
+clog_stderr_handler_new(void)
+{
+    return clog_stream_handler_new_fp(stderr, false);
 }
 
 static void

@@ -27,14 +27,18 @@ clog_null_handler__message(struct clog_handler *self, struct clog_message *msg)
     return CLOG_SKIP;
 }
 
-static struct clog_handler  NULL_HANDLER = {
-    clog_null_handler__annotation,
-    clog_null_handler__message,
-    NULL
-};
+static void
+clog_null_handler__free(struct clog_handler *self)
+{
+    free(self);
+}
 
 struct clog_handler *
-clog_null_handler(void)
+clog_null_handler_new(void)
 {
-    return &NULL_HANDLER;
+    struct clog_handler  *self = cork_new(struct clog_handler);
+    self->annotation = clog_null_handler__annotation;
+    self->message = clog_null_handler__message;
+    self->free = clog_null_handler__free;
+    return self;
 }
