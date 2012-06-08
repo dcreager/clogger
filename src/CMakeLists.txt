@@ -13,7 +13,10 @@ include_directories(../include)
 # Build the library
 
 set(LIBCLOGGER_SRC
-    libclogger/foo.c
+    libclogger/levels.c
+    libclogger/null.c
+    libclogger/stack.c
+    libclogger/stream.c
 )
 
 add_library(libclogger SHARED ${LIBCLOGGER_SRC})
