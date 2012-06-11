@@ -89,6 +89,45 @@ clog_process_message(struct clog_message *msg)
     return 0;
 }
 
+int
+clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
+                      const char *key, const char *value)
+{
+    /* First send the annotation through the handlers in the process stack, and
+     * then the handlers in the thread stack.  If any of them return
+     * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
+
+    struct clog_handler  **thread_stack = thread_stack_get();
+    struct clog_handler  *handler;
+    bool  found_handler = false;
+
+    /* We're not supposed to send the annotation to any handlers "above" the
+     * current one in the stack. */
+
+    for (handler = process_stack; handler != NULL; handler = handler->next) {
+        if (self == handler) {
+            found_handler = true;
+        }
+
+        if (found_handler) {
+            rii_check(clog_handler_annotation(handler, msg, key, value));
+        }
+    }
+
+    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
+        if (self == handler) {
+            found_handler = true;
+        }
+
+        if (found_handler) {
+            rii_check(clog_handler_annotation(handler, msg, key, value));
+        }
+    }
+
+    return 0;
+}
+
+
 void
 clog_set_minimum_level(enum clog_level level)
 {

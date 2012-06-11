@@ -14,7 +14,9 @@
 
 #include <check.h>
 
+#include <libcork/core.h>
 #include <libcork/ds.h>
+#include <libcork/helpers/errors.h>
 
 #include "clogger/api.h"
 #include "clogger/handlers.h"
@@ -41,47 +43,97 @@ generate_messages(void)
 
 #undef CLOG_CHANNEL
 
+static bool use_process;
+static struct cork_buffer  *log_buf;
+static struct cork_stream_consumer  *log_consumer;
+static struct clog_handler  *handler;
+
 static void
-test_process(const char *expected)
+push_handler(struct clog_handler *handler)
 {
-    struct cork_buffer  buf = CORK_BUFFER_INIT();
-    struct cork_stream_consumer  *consumer =
-        cork_buffer_to_stream_consumer(&buf);
-    struct clog_handler  *handler =
-        clog_stream_handler_new_consumer(consumer);
+    use_process?
+        clog_handler_push_process(handler):
+        clog_handler_push_thread(handler);
+}
 
-    clog_handler_push_process(handler);
-    generate_messages();
-    fail_if(buf.buf == NULL,
-            "No logging results\n\nExpected\n%s", expected);
-    fail_unless(strcmp(buf.buf, expected) == 0,
-                "Unexpected logging results\n\nGot\n%s\n\nExpected\n%s",
-                (char *) buf.buf, expected);
-    fail_if_error(clog_handler_pop_process(handler));
-
-    clog_handler_free(handler);
-    cork_buffer_done(&buf);
+static int
+pop_handler(struct clog_handler *handler)
+{
+    return use_process?
+        clog_handler_pop_process(handler):
+        clog_handler_pop_thread(handler);
 }
 
 static void
-test_thread(const char *expected)
+setup_process(void)
 {
-    struct cork_buffer  buf = CORK_BUFFER_INIT();
-    struct cork_stream_consumer  *consumer =
-        cork_buffer_to_stream_consumer(&buf);
-    struct clog_handler  *handler =
-        clog_stream_handler_new_consumer(consumer);
-
-    clog_handler_push_thread(handler);
-    generate_messages();
-    fail_unless(strcmp(buf.buf, expected) == 0,
-                "Unexpected logging results\n\nGot\n%s\n\nExpected\n%s",
-                (char *) buf.buf, expected);
-    fail_if_error(clog_handler_pop_thread(handler));
-
-    clog_handler_free(handler);
-    cork_buffer_done(&buf);
+    use_process = true;
 }
+
+static void
+setup_thread(void)
+{
+    use_process = false;
+}
+
+static void
+create_log_handler(void)
+{
+    log_buf = cork_buffer_new();
+    log_consumer = cork_buffer_to_stream_consumer(log_buf);
+    handler = clog_stream_handler_new_consumer(log_consumer);
+    push_handler(handler);
+}
+
+static void
+destroy_log_handler(void)
+{
+    fail_if_error(pop_handler(handler));
+    clog_handler_free(handler);
+    cork_buffer_free(log_buf);
+}
+
+static void
+test_logs(const char *expected)
+{
+    generate_messages();
+    fail_unless(strcmp(log_buf->buf, expected) == 0,
+                "Unexpected logging results\n\nGot\n%s\n\nExpected\n%s",
+                (char *) log_buf->buf, expected);
+}
+
+
+/*-----------------------------------------------------------------------
+ * Test annotator
+ */
+
+static int
+annotate__annotation(struct clog_handler *log, struct clog_message *msg,
+                     const char *key, const char *value)
+{
+    return 0;
+}
+
+static int
+annotate__message(struct clog_handler *log, struct clog_message *msg)
+{
+    rii_check(clog_annotate_message(log, msg, "key1", "value1"));
+    rii_check(clog_annotate_message(log, msg, "key2", "value2"));
+    return 0;
+}
+
+static void
+annotate__free(struct clog_handler *log)
+{
+    /* Nothing to do */
+}
+
+struct clog_handler  annotate = {
+    annotate__annotation,
+    annotate__message,
+    annotate__free,
+    NULL
+};
 
 
 /*-----------------------------------------------------------------------
@@ -93,23 +145,15 @@ static const char  *EXPECTED_01 =
     "[ERROR   ] test: Error message\n"
     "[WARNING ] test: Warning message\n";
 
-START_TEST(test_process_01)
+START_TEST(test_01)
 {
     DESCRIBE_TEST;
     /* This is the default, but we're setting it explicitly in case we run the
      * tests with CK_FORK=no */
     clog_set_minimum_level(CLOG_LEVEL_WARNING);
-    test_process(EXPECTED_01);
-}
-END_TEST
-
-START_TEST(test_thread_01)
-{
-    DESCRIBE_TEST;
-    /* This is the default, but we're setting it explicitly in case we run the
-     * tests with CK_FORK=no */
-    clog_set_minimum_level(CLOG_LEVEL_WARNING);
-    test_thread(EXPECTED_01);
+    create_log_handler();
+    test_logs(EXPECTED_01);
+    destroy_log_handler();
 }
 END_TEST
 
@@ -126,19 +170,64 @@ static const char  *EXPECTED_02 =
     "[INFO    ] test: Info message\n"
     "[DEBUG   ] test: Debug message\n";
 
-START_TEST(test_process_02)
+START_TEST(test_02)
 {
     DESCRIBE_TEST;
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
-    test_process(EXPECTED_02);
+    create_log_handler();
+    test_logs(EXPECTED_02);
+    destroy_log_handler();
 }
 END_TEST
 
-START_TEST(test_thread_02)
+
+/*-----------------------------------------------------------------------
+ * Annotations
+ */
+
+static const char  *EXPECTED_annotate_01 =
+    "[CRITICAL] test: key1=value1 key2=value2 Critical message\n"
+    "[ERROR   ] test: key1=value1 key2=value2 Error message\n"
+    "[WARNING ] test: key1=value1 key2=value2 Warning message\n"
+    "[NOTICE  ] test: key1=value1 key2=value2 Notice message\n"
+    "[INFO    ] test: key1=value1 key2=value2 Info message\n"
+    "[DEBUG   ] test: key1=value1 key2=value2 Debug message\n";
+
+
+START_TEST(test_annotate_01)
 {
     DESCRIBE_TEST;
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
-    test_thread(EXPECTED_02);
+    create_log_handler();
+    push_handler(&annotate);
+    test_logs(EXPECTED_annotate_01);
+    fail_if_error(pop_handler(&annotate));
+    destroy_log_handler();
+}
+END_TEST
+
+
+/*-----------------------------------------------------------------------
+ * Skipped annotations
+ */
+
+static const char  *EXPECTED_annotate_02 =
+    "[CRITICAL] test: Critical message\n"
+    "[ERROR   ] test: Error message\n"
+    "[WARNING ] test: Warning message\n"
+    "[NOTICE  ] test: Notice message\n"
+    "[INFO    ] test: Info message\n"
+    "[DEBUG   ] test: Debug message\n";
+
+START_TEST(test_annotate_02)
+{
+    DESCRIBE_TEST;
+    clog_set_minimum_level(CLOG_LEVEL_DEBUG);
+    push_handler(&annotate);
+    create_log_handler();
+    test_logs(EXPECTED_annotate_02);
+    destroy_log_handler();
+    fail_if_error(pop_handler(&annotate));
 }
 END_TEST
 
@@ -153,13 +242,19 @@ test_suite()
     Suite  *s = suite_create("logging");
 
     TCase  *tc_process = tcase_create("process");
-    tcase_add_test(tc_process, test_process_01);
-    tcase_add_test(tc_process, test_process_02);
+    tcase_add_checked_fixture(tc_process, setup_process, NULL);
+    tcase_add_test(tc_process, test_01);
+    tcase_add_test(tc_process, test_02);
+    tcase_add_test(tc_process, test_annotate_01);
+    tcase_add_test(tc_process, test_annotate_02);
     suite_add_tcase(s, tc_process);
 
     TCase  *tc_thread = tcase_create("thread");
-    tcase_add_test(tc_thread, test_thread_01);
-    tcase_add_test(tc_thread, test_thread_02);
+    tcase_add_checked_fixture(tc_thread, setup_thread, NULL);
+    tcase_add_test(tc_thread, test_01);
+    tcase_add_test(tc_thread, test_02);
+    tcase_add_test(tc_thread, test_annotate_01);
+    tcase_add_test(tc_thread, test_annotate_02);
     suite_add_tcase(s, tc_thread);
 
     return s;

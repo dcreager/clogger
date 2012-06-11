@@ -78,10 +78,9 @@ clog_stream_handler__annotation(struct clog_handler *vself,
 
     if (clog_stream_handler_claim(self)) {
         /* Just claimed the lock; clear the buffer */
-        cork_buffer_printf(&self->annotations_buf, "%s=%s", key, value);
-    } else {
-        cork_buffer_append_printf(&self->annotations_buf, " %s=%s", key, value);
+        cork_buffer_clear(&self->annotations_buf);
     }
+    cork_buffer_append_printf(&self->annotations_buf, " %s=%s", key, value);
 
     return CLOG_CONTINUE;
 }
