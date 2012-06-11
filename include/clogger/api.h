@@ -93,9 +93,13 @@ clog_annotate_message(struct clog_handler *handler, struct clog_message *msg,
                       const char *key, const char *value);
 
 void
-clog_log_channel(enum clog_level level, const char *channel,
-                 const char *format, ...)
+_clog_log_channel(enum clog_level level, const char *channel,
+                  const char *format, ...)
     CORK_ATTR_PRINTF(3,4);
+
+#define clog_log_channel(level, channel, ...) \
+    (CORK_UNLIKELY((level) <= clog_minimum_level)? \
+     _clog_log_channel((level), (channel), __VA_ARGS__): (void) 0)
 
 #define clog_log(level, ...) \
     clog_log_channel((level), CLOG_CHANNEL, __VA_ARGS__)
@@ -106,15 +110,12 @@ clog_log_channel(enum clog_level level, const char *channel,
 #define clog_notice(...)    clog_log(CLOG_LEVEL_NOTICE, __VA_ARGS__)
 #define clog_info(...)      clog_log(CLOG_LEVEL_INFO, __VA_ARGS__)
 #define clog_debug(...)     clog_log(CLOG_LEVEL_DEBUG, __VA_ARGS__)
-
-#if defined(CLOG_TRACE_ENABLED)
 #define clog_trace(...)     clog_log(CLOG_LEVEL_TRACE, __VA_ARGS__)
-#else
-#define clog_trace(...)     /* skip trace messages */
-#endif
+
+extern enum clog_level  clog_minimum_level;
 
 void
-clog_set_maximum_level(enum clog_level level);
+clog_set_minimum_level(enum clog_level level);
 
 
 #endif /* CLOGGER_API_H */

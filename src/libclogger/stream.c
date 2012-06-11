@@ -212,8 +212,6 @@ clog_stream_handler__free(struct clog_handler *vself)
 {
     struct clog_stream_handler  *self =
         cork_container_of(vself, struct clog_stream_handler, parent);
-    /* Can't free the special stderr handler, since it's static */
-    assert(self != &STDERR_HANDLER);
     cork_stream_consumer_free(self->consumer);
     cork_buffer_done(&self->annotations_buf);
     cork_buffer_done(&self->msg_buf);

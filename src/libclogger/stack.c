@@ -19,7 +19,7 @@
 #include "clogger/error.h"
 
 
-static enum clog_level  maximum_level = CLOG_LEVEL_WARNING;
+enum clog_level  clog_minimum_level = CLOG_LEVEL_WARNING;
 static struct clog_handler  *process_stack = NULL;
 cork_tls(struct clog_handler *, thread_stack);
 
@@ -90,26 +90,22 @@ clog_process_message(struct clog_message *msg)
 }
 
 void
-clog_set_maximum_level(enum clog_level level)
+clog_set_minimum_level(enum clog_level level)
 {
-    maximum_level = level;
+    clog_minimum_level = level;
 }
 
 void
-clog_log_channel(enum clog_level level, const char *channel,
-                 const char *format, ...)
+_clog_log_channel(enum clog_level level, const char *channel,
+                  const char *format, ...)
 {
-    if (CORK_LIKELY(level > maximum_level)) {
-        /* Skip the message if it's above the requested maximum level */
-    } else {
-        /* Otherwise create a clog_message object and pass it off to all of the
-         * handlers. */
-        struct clog_message  msg;
-        msg.level = level;
-        msg.channel = channel;
-        msg.format = format;
-        va_start(msg.args, format);
-        clog_process_message(&msg);
-        va_end(msg.args);
-    }
+    /* Otherwise create a clog_message object and pass it off to all of the
+     * handlers. */
+    struct clog_message  msg;
+    msg.level = level;
+    msg.channel = channel;
+    msg.format = format;
+    va_start(msg.args, format);
+    clog_process_message(&msg);
+    va_end(msg.args);
 }

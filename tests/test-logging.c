@@ -52,6 +52,8 @@ test_process(const char *expected)
 
     clog_handler_push_process(handler);
     generate_messages();
+    fail_if(buf.buf == NULL,
+            "No logging results\n\nExpected\n%s", expected);
     fail_unless(strcmp(buf.buf, expected) == 0,
                 "Unexpected logging results\n\nGot\n%s\n\nExpected\n%s",
                 (char *) buf.buf, expected);
@@ -96,7 +98,7 @@ START_TEST(test_process_01)
     DESCRIBE_TEST;
     /* This is the default, but we're setting it explicitly in case we run the
      * tests with CK_FORK=no */
-    clog_set_maximum_level(CLOG_LEVEL_WARNING);
+    clog_set_minimum_level(CLOG_LEVEL_WARNING);
     test_process(EXPECTED_01);
 }
 END_TEST
@@ -106,7 +108,7 @@ START_TEST(test_thread_01)
     DESCRIBE_TEST;
     /* This is the default, but we're setting it explicitly in case we run the
      * tests with CK_FORK=no */
-    clog_set_maximum_level(CLOG_LEVEL_WARNING);
+    clog_set_minimum_level(CLOG_LEVEL_WARNING);
     test_thread(EXPECTED_01);
 }
 END_TEST
@@ -127,7 +129,7 @@ static const char  *EXPECTED_02 =
 START_TEST(test_process_02)
 {
     DESCRIBE_TEST;
-    clog_set_maximum_level(CLOG_LEVEL_DEBUG);
+    clog_set_minimum_level(CLOG_LEVEL_DEBUG);
     test_process(EXPECTED_02);
 }
 END_TEST
@@ -135,7 +137,7 @@ END_TEST
 START_TEST(test_thread_02)
 {
     DESCRIBE_TEST;
-    clog_set_maximum_level(CLOG_LEVEL_DEBUG);
+    clog_set_minimum_level(CLOG_LEVEL_DEBUG);
     test_thread(EXPECTED_02);
 }
 END_TEST

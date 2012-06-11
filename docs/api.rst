@@ -110,30 +110,6 @@ We provide several functions for producing log messages.
    you must define.  Calling any of these functions is equivalent to calling
    :c:func:`clog_log` with the respective :c:type:`clog_level` severity level.
 
-   The :c:func:`clog_trace` function deserves special mention; this is the only
-   logging function that can be fully turned off in a release build.  This is
-   intended for messages that would have a noticeable impact on the speed of
-   your code.  The :c:func:`clog_trace` function, by default, will *not* produce
-   any log messages (i.e., it will expand into a no-op).  To enable this
-   function, define the following preprocessor macro:
-
-   .. macro:: CLOG_TRACE_ENABLED
-
-   .. note::
-
-      This macro only affects the :c:func:`clog_trace` function.  If you
-      generate a :c:data:`CLOG_LEVEL_TRACE` message using :c:func:`clog_log` or
-      :c:func:`clog_log_channel`, it will be processed regardless of whether the
-      :c:data:`CLOG_TRACE_ENABLED` macro is defined.
-
-   .. hint::
-
-      You lose some flexibility with trace messages, since if you compile them
-      out of your library or application completely, you cannot turn them back
-      on at runtime if you need to collect more logging data.  Please verify
-      that debug messages would actually be a performance bottleneck before
-      turning them into trace messages.
-
 .. var:: const char \*CLOG_CHANNEL
 
    A macro that's used as the channel name for any log messages created by
@@ -141,6 +117,40 @@ We provide several functions for producing log messages.
    :c:func:`clog_warning`, :c:func:`clog_notice`, :c:func:`clog_info`, or
    :c:func:`clog_debug`.  You are responsible for defining this macro before
    using any of those functions.
+
+
+Minimum severity level
+~~~~~~~~~~~~~~~~~~~~~~
+
+You can filter log messages based on arbitrary criteria via the log handler
+mechanism, described below.  However, a special type of filtering is used often
+enough, and needs to be as efficient as possible, so it deserves special
+treatment.  This is the ability to only produce log messages above a certain
+severity level.
+
+Clogger allows you to define a *minimum severity level*; the functions described
+above for producing log messages will silently ignore any message that isn't at
+least as severe as the minimum severity level.  The minimum severity level can
+be set with the following function:
+
+.. function:: void clog_set_minimum_level(enum clog_level level)
+
+   Sets the minimum severity level to *level*.  Log messages will be silently
+   dropped (without passing them on to *any* log handlers) if they are not at
+   least as severe as *level*.
+
+Note that there is a single global minimum level for the entire process; this
+function should only be called by an application, and not by library code.
+
+.. admonition:: Implementation note
+   :class: note
+
+   This check is very efficient; it usually compiles down to 3-4 machine
+   instructions per log message.  Most importantly, the minimum severity level
+   check can be performed before the stack frame is set up for the actual call
+   to the log handlers that will process the log message.  This allows us to
+   always compile log messages into your applications and libraries, even if
+   you need to process millions of records per second.
 
 
 Handlers
