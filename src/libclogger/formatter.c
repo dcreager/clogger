@@ -448,6 +448,104 @@ var_segment_new(struct clog_formatter *fmt, const char *default_value,
 
 
 /*-----------------------------------------------------------------------
+ * Multiple variable reference
+ */
+
+struct multi_segment {
+    struct segment  parent;
+    const char  *default_value;
+    struct cork_buffer  value;
+    annotation_segment_array  segments;
+    bool  value_given;
+};
+
+static int
+multi_segment__start(struct segment *vself)
+{
+    struct multi_segment  *self =
+        cork_container_of(vself, struct multi_segment, parent);
+    self->value_given = false;
+    cork_buffer_clear(&self->value);
+    return 0;
+}
+
+static int
+multi_segment__annotation(struct segment *vself, const char *key,
+                          const char *value)
+{
+    size_t  i;
+    struct multi_segment  *self =
+        cork_container_of(vself, struct multi_segment, parent);
+
+    self->value_given = true;
+    for (i = 0; i < cork_array_size(&self->segments); i++) {
+        struct annotation_segment  *segment =
+            cork_array_at(&self->segments, i);
+        rii_check(segment->annotation(segment, &self->value, key, value));
+    }
+    return 0;
+}
+
+static int
+multi_segment__message(struct segment *vself, struct clog_message *msg)
+{
+    return 0;
+}
+
+static int
+multi_segment__append(struct segment *vself, struct cork_buffer *dest)
+{
+    struct multi_segment  *self =
+        cork_container_of(vself, struct multi_segment, parent);
+    if (self->value_given) {
+        cork_buffer_append(dest, self->value.buf, self->value.size);
+    } else {
+        cork_buffer_append_string(dest, self->default_value);
+    }
+    return 0;
+}
+
+static void
+multi_segment__free(struct segment *vself)
+{
+    size_t  i;
+    struct multi_segment  *self =
+        cork_container_of(vself, struct multi_segment, parent);
+
+    cork_strfree(self->default_value);
+    cork_buffer_done(&self->value);
+    for (i = 0; i < cork_array_size(&self->segments); i++) {
+        struct annotation_segment  *segment =
+            cork_array_at(&self->segments, i);
+        segment->free(segment);
+    }
+    cork_array_done(&self->segments);
+    free(self);
+}
+
+static struct multi_segment *
+multi_segment_new(struct clog_formatter *fmt, const char *default_value,
+                  size_t default_size)
+{
+    struct multi_segment  *self = cork_new(struct multi_segment);
+    self->parent.start = multi_segment__start;
+    self->parent.annotation = multi_segment__annotation;
+    self->parent.message = multi_segment__message;
+    self->parent.append = multi_segment__append;
+    self->parent.free = multi_segment__free;
+    cork_array_init(&self->segments);
+    cork_buffer_init(&self->value);
+    cork_buffer_set(&self->value, default_value, default_size);
+    self->default_value = cork_strdup(self->value.buf);
+#if 0
+    printf("MLT \"%s\"\n", self->default_value);
+#endif
+    cork_array_append(&fmt->segments, &self->parent);
+    return self;
+}
+
+
+/*-----------------------------------------------------------------------
  * Format string
  */
 
@@ -546,6 +644,20 @@ format_string_parse(struct clog_formatter *self, const char *fmt)
                     /* Parse the annotation spec */
                     rip_check(curr = annotation_spec_parse
                               (&segment->segments, v_end + 2));
+                } else {
+                    clog_bad_format("Expected { in #! conversion");
+                    return -1;
+                }
+            } else if (curr[1] == '*') {
+                if (curr[2] == '{') {
+                    struct multi_segment  *segment;
+
+                    /* Create the multi-variable segment */
+                    rip_check(segment = multi_segment_new(self, "", 0));
+
+                    /* Parse the annotation spec */
+                    rip_check(curr = annotation_spec_parse
+                              (&segment->segments, curr + 3));
                 } else {
                     clog_bad_format("Expected { in #! conversion");
                     return -1;

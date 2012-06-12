@@ -272,6 +272,11 @@ available:
     annotation with this name in the log message, this conversion is ignored.
     ``spec`` is an annotation specification, described below.
 
+``#*{spec}``
+    Replaced with the values of all of the annotations in the log message.  If
+    there is no annotations in the log message, this conversion is ignored.
+    ``spec`` is an annotation specification, described below.
+
 ``##``
     Replaced with a single ``#`` character.
 
