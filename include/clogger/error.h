@@ -18,11 +18,15 @@
 #define CLOG_ERROR  0x9c7ff224
 
 enum clog_error {
+    CLOG_BAD_FORMAT,
     CLOG_BAD_STACK
 };
 
 #define clog_set_error(code, ...) \
     (cork_error_set(CLOG_ERROR, code, __VA_ARGS__))
+
+#define clog_bad_format(...) \
+    clog_set_error(CLOG_BAD_FORMAT, __VA_ARGS__)
 
 #define clog_bad_stack(...) \
     clog_set_error(CLOG_BAD_STACK, __VA_ARGS__)

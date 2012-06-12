@@ -234,6 +234,43 @@ Once you're done with a handler, you should free it:
    Free *handler* and any resources that it owns.
 
 
+.. _format-strings:
+
+Format strings
+--------------
+
+Many of the built-in handlers defined below let you pass in a *format string*,
+which is used to render each log message into a string for display purposes.
+Each format string contains a set of *conversions* intermingled with raw text.
+The raw text is copied into the result string as-is.  Each conversion is
+replaced with part of the current log message.  The following conversions are
+available:
+
+``%l``
+    Replaced with the log message's severity level.
+
+``%L``
+    Replaced with a fixed-width version the log message's severity level.
+    (Regardless of the severity level of the log message, this conversion will
+    always take up the same amount of space in the result string.)
+
+``%c``
+    Replaced with the log message's channel.
+
+``%m``
+    Replaced with the log message's text.
+
+``%%``
+    Replaced with a single ``%`` character.
+
+``#{name}``
+    Replaced with the value of the annotation named ``name``.  If there is no
+    annotation with this name in the log message, this conversion is ignored.
+
+``##``
+    Replaced with a single ``#`` character.
+
+
 Built-in handlers
 -----------------
 
@@ -427,3 +464,47 @@ log message, the body processing is paused until the new annotation has been
 fully processed.  Similarly, if we're in the middle of processing a previous
 annotation, that annotation's processing is paused until the new annotation has
 been fully processed.
+
+
+.. rubric:: Format strings
+
+If you would like to use a :ref:`format string <format-strings>` to render the
+contents of a log message, you can create an instance of the
+:c:type:`clog_formatter` type.
+
+.. type:: struct clog_formatter
+
+   Renders a log message into a string according to a :ref:`format string
+   <format-strings>`.
+
+
+.. function:: struct clog_formatter \*clog_formatter_new(const char \*format_string)
+
+   Create a new formatter that uses *format_string* to render each log message.
+
+.. function:: void clog_formatter_free(struct clog_formatter \*formatter)
+
+   Free *formatter* and any resources it used.
+
+
+.. function:: int clog_formatter_start(struct clog_formatter \*formatter)
+              int clog_formatter_annotation(struct clog_formatter \*formatter, const char \*key, const char \*value)
+              int clog_formatter_finish(struct clog_formatter \*formatter, struct clog_message \*msg, struct cork_buffer \*dest)
+
+   These three functions are used to render a log message using a formatter.
+   You first call ``_start`` first, and you must call it exactly once for each
+   log message.  This function initializes some internal state in *formatter*.
+   Then, you call ``_annotation`` for each annotation in the log message.
+   Finally, you call ``_finish`` each with :c:type:`clog_message` instance for
+   the current log message.  This final function call renders the log message
+   into *dest* according to *formatter*'s format string.
+
+
+As mentioned above, each log handler is guaranteed to see all of the annotations
+for a log message (via its :c:member:`~clog_handler.annotation` method) before
+it sees the message body (via :c:member:`~clog_handler.message`).  This means
+that you can simply call :c:func:`clog_formatter_annotation` in your
+:c:member:`~clog_handler.annotation` method, and call
+:c:func:`clog_formatter_message` in your :c:member:`~clog_handler.message`
+method.  In both function, you'll also need to check whether you've called
+:c:func:`clog_formatter_start` for the current message.
