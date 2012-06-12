@@ -267,8 +267,30 @@ available:
     Replaced with the value of the annotation named ``name``.  If there is no
     annotation with this name in the log message, this conversion is ignored.
 
+``#!{name}{spec}``
+    Replaced with the value of the annotation named ``name``.  If there is no
+    annotation with this name in the log message, this conversion is ignored.
+    ``spec`` is an annotation specification, described below.
+
 ``##``
     Replaced with a single ``#`` character.
+
+
+.. rubric:: Annotation specifications
+
+Some of the conversions listed above allow you customize what is displayed for
+a log message's annotation by given an *annotation specification*.  Annotation
+specs are much like format strings, but with a different set of allowed
+conversions:
+
+``%k``
+    Replaced with the annotation's key.
+
+``%v``
+    Replaced with the annotation's value.
+
+``%%``
+    Replaced with a single ``%`` character.
 
 
 Built-in handlers

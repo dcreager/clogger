@@ -49,10 +49,15 @@ START_TEST(test_format_parse_01)
     GOOD("%%");
     GOOD("%l %L %c %m");
     GOOD("#{var}");
+    GOOD("#!{var}{ %% %k %v}");
     GOOD("test 1");
     GOOD("test ##1 %%1");
     BAD("#{unterminated var");
     BAD("#!");
+    BAD("#!{unterminated var");
+    BAD("#!{var}");
+    BAD("#!{var}{unterminated spec");
+    BAD("#!{var}{%!}");
     BAD("%!");
 }
 END_TEST
@@ -82,10 +87,16 @@ START_TEST(test_format_01)
     const char  *fmt_str =
         "  hello #{var1} ## #{var2} "
         "[%l] [%L] %c %m "
+        "#!{var1}{%k = %v }"
+        "#!{var2}{%% }"
+        "#!{var3}{%% }"
         "world #{var1} #{var3}";
     const char  *expected =
         "  hello value1 # value2 "
         "[INFO] [INFO    ] test This is only a test. "
+        "var1 = value1 "
+        "% "
+        ""
         "world value1 ";
 
     fail_if_error(fmt = clog_formatter_new(fmt_str));
