@@ -310,26 +310,27 @@ messages.
    Return a handler that immediately drops all messages that it receives.
 
 
-.. function:: struct clog_handler \*clog_stderr_handler_new(void)
+.. function:: struct clog_handler \*clog_stderr_handler_new(const char \*format_string)
 
-   Return a handler that logs all messages to the ``stderr`` stream.  (Currently
-   you don't have any control over the format of the messages.)
-
-
-.. function:: struct clog_handler \*clog_stream_handler_new_fp(FILE \*fp, bool should_close)
-
-   Return a handler that logs all messages to the given C stream.  (Currently
-   you don't have any control over the format of the messages.)  If
-   *should_close* is ``true``, then we take responsiblity for closing *fp* when
-   the handler is freed.
+   Return a handler that logs all messages to the ``stderr`` stream.  The format
+   of each log message is controlled by the given :ref:`format string
+   <format-strings>`.
 
 
-.. function:: struct clog_handler \*clog_stream_handler_new_consumer(struct cork_stream_consumer \*consumer)
+.. function:: struct clog_handler \*clog_stream_handler_new_fp(FILE \*fp, bool should_close, const char \*format_string)
+
+   Return a handler that logs all messages to the given C stream.  The format of
+   each log message is controlled by the given :ref:`format string
+   <format-strings>`.  If *should_close* is ``true``, then we take responsiblity
+   for closing *fp* when the handler is freed.
+
+
+.. function:: struct clog_handler \*clog_stream_handler_new_consumer(struct cork_stream_consumer \*consumer, const char \*format_string)
 
    Return a handler that logs all messages to the given :ref:`libcork stream
-   consumer <libcork:stream>`.  (Currently you don't have any control over the
-   format of the messages.)  We take responsibility for freeing *consumer* when
-   the handler is freed.
+   consumer <libcork:stream>`.  The format of each log message is controlled by
+   the given :ref:`format string <format-strings>`.  We take responsibility for
+   freeing *consumer* when the handler is freed.
 
 
 Writing a new handler

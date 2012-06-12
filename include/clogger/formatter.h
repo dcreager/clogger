@@ -12,6 +12,8 @@
 #define CLOGGER_FORMATTER_H
 
 
+#include <libcork/ds.h>
+
 #include <clogger/api.h>
 
 

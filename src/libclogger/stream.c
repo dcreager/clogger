@@ -18,6 +18,7 @@
 #include <libcork/helpers/errors.h>
 
 #include "clogger/api.h"
+#include "clogger/formatter.h"
 #include "clogger/handlers.h"
 
 
@@ -25,8 +26,8 @@ struct clog_stream_handler {
     struct clog_handler  parent;
     struct cork_stream_consumer  *consumer;
     volatile cork_thread_id  active_thread;
-    struct cork_buffer  annotations_buf;
-    struct cork_buffer  msg_buf;
+    struct cork_buffer  buf;
+    struct clog_formatter  *fmt;
     bool  first_chunk;
 };
 
@@ -78,10 +79,10 @@ clog_stream_handler__annotation(struct clog_handler *vself,
 
     if (clog_stream_handler_claim(self)) {
         /* Just claimed the lock; clear the buffer */
-        cork_buffer_clear(&self->annotations_buf);
+        rii_check(clog_formatter_start(self->fmt));
     }
-    cork_buffer_append_printf(&self->annotations_buf, " %s=%s", key, value);
 
+    rii_check(clog_formatter_annotation(self->fmt, key, value));
     return CLOG_CONTINUE;
 }
 
@@ -91,21 +92,16 @@ clog_stream_handler__message(struct clog_handler *vself,
 {
     struct clog_stream_handler  *self =
         cork_container_of(vself, struct clog_stream_handler, parent);
-    char  *annotations;
 
-    clog_stream_handler_claim(self);
-    annotations = self->annotations_buf.buf;
-    if (annotations == NULL) {
-        annotations = "";
+    if (clog_stream_handler_claim(self)) {
+        /* Just claimed the lock; clear the buffer */
+        rii_check(clog_formatter_start(self->fmt));
     }
-    cork_buffer_printf(&self->msg_buf, "[%s] %s:%s ",
-                       clog_level_name_fixed_width(msg->level),
-                       msg->channel, annotations);
-    cork_buffer_append_vprintf(&self->msg_buf, msg->format, msg->args);
-    cork_buffer_append(&self->msg_buf, "\n", 1);
 
+    rii_check(clog_formatter_finish(self->fmt, msg, &self->buf));
+    cork_buffer_append(&self->buf, "\n", 1);
     rii_check(cork_stream_consumer_data
-              (self->consumer, self->msg_buf.buf, self->msg_buf.size,
+              (self->consumer, self->buf.buf, self->buf.size,
                self->first_chunk));
     self->first_chunk = false;
     clog_stream_handler_release(self);
@@ -177,8 +173,22 @@ stream_consumer_new(FILE *fp, bool should_close)
  * Constructors and destructors
  */
 
+static void
+clog_stream_handler__free(struct clog_handler *vself)
+{
+    struct clog_stream_handler  *self =
+        cork_container_of(vself, struct clog_stream_handler, parent);
+    cork_stream_consumer_free(self->consumer);
+    cork_buffer_done(&self->buf);
+    if (self->fmt != NULL) {
+        clog_formatter_free(self->fmt);
+    }
+    free(self);
+}
+
 struct clog_handler *
-clog_stream_handler_new_consumer(struct cork_stream_consumer *consumer)
+clog_stream_handler_new_consumer(struct cork_stream_consumer *consumer,
+                                 const char *fmt)
 {
     struct clog_stream_handler  *self = cork_new(struct clog_stream_handler);
     self->parent.annotation = clog_stream_handler__annotation;
@@ -186,33 +196,26 @@ clog_stream_handler_new_consumer(struct cork_stream_consumer *consumer)
     self->parent.free = clog_stream_handler__free;
     self->consumer = consumer;
     self->active_thread = CORK_THREAD_NONE;
-    cork_buffer_init(&self->annotations_buf);
-    cork_buffer_init(&self->msg_buf);
+    cork_buffer_init(&self->buf);
     self->first_chunk = true;
+    ep_check(self->fmt = clog_formatter_new(fmt));
     return &self->parent;
+
+error:
+    clog_stream_handler__free(&self->parent);
+    return NULL;
 }
 
 struct clog_handler *
-clog_stream_handler_new_fp(FILE *fp, bool should_close)
+clog_stream_handler_new_fp(FILE *fp, bool should_close, const char *fmt)
 {
     struct cork_stream_consumer  *consumer =
         stream_consumer_new(fp, should_close);
-    return clog_stream_handler_new_consumer(consumer);
+    return clog_stream_handler_new_consumer(consumer, fmt);
 }
 
 struct clog_handler *
-clog_stderr_handler_new(void)
+clog_stderr_handler_new(const char *fmt)
 {
-    return clog_stream_handler_new_fp(stderr, false);
-}
-
-static void
-clog_stream_handler__free(struct clog_handler *vself)
-{
-    struct clog_stream_handler  *self =
-        cork_container_of(vself, struct clog_stream_handler, parent);
-    cork_stream_consumer_free(self->consumer);
-    cork_buffer_done(&self->annotations_buf);
-    cork_buffer_done(&self->msg_buf);
-    free(self);
+    return clog_stream_handler_new_fp(stderr, false, fmt);
 }
