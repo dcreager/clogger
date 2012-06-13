@@ -161,13 +161,14 @@ produces log messages (described in the previous section), and the code that
 collects and consumes those log messages.
 
 Clogger log messages are processed by *handlers*.  Handlers are organized into
-*stacks*.  Clogger is thread-aware; there is one stack of handlers (the *process
-stack*) which applies to all of the threads in the current process, and each
-thread also has its own thread-specific stack (the *thread stack*).  Whenever
-the :c:func:`clog_log` function is called, the log message is presented to each
-of the handlers in the process stack, and then to each of the handlers in the
-thread stack.  A handler can abort this process at any time, preventing the log
-message from being processed by any other handlers in the stack.
+*stacks*.  Clogger is thread-aware; each thread has its own stack of handlers.
+Handlers can apply to one specific thread or to all of the threads in the
+current process.  Whenever the :c:func:`clog_log` function is called from a
+thread, the log message is presented to each of the handlers in that thread's
+stack, in the reverse of the order that they were pushed onto the stack (i.e.,
+the most recently pushed handler is called first).  A handler can abort this
+process at any time, preventing the log message from being processed by any
+other handlers in the stack.
 
 This stack-based design provides a lot of flexibility.  For console
 applications, you'll usually register a handler that prints log messages to
@@ -206,6 +207,17 @@ threads in the current process.
 
    It's your responsiblity to make sure that *handler* isn't already on the
    stack; if it is, the behavior is undefined.
+
+   .. note::
+
+      You are currently limited in that you cannot push any process handlers
+      onto the stack once you've pushed any thread-specific handlers (in any
+      thread).  This lets us assume that all thread-specific handlers should be
+      called before any process-wide handlers.  If you call
+      :c:func:`clog_handler_push_process` after calling
+      :c:func:`clog_handler_push_thread`, you might get an ``assert`` failure
+      (causing your process to abort).  This restriction might be removed in the
+      future.
 
 .. function:: int clog_handler_pop_process(struct clog_handler \*handler)
               int clog_handler_pop_thread(struct clog_handler \*handler)

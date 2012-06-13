@@ -20,6 +20,8 @@
 
 
 enum clog_level  clog_minimum_level = CLOG_LEVEL_WARNING;
+
+static bool can_push_process_handlers = true;
 static struct clog_handler  *process_stack = NULL;
 cork_tls(struct clog_handler *, thread_stack);
 
@@ -27,6 +29,7 @@ cork_tls(struct clog_handler *, thread_stack);
 void
 clog_handler_push_process(struct clog_handler *handler)
 {
+    assert(can_push_process_handlers);
     handler->next = process_stack;
     process_stack = handler;
 }
@@ -50,6 +53,7 @@ clog_handler_push_thread(struct clog_handler *handler)
     struct clog_handler  **thread_stack = thread_stack_get();
     handler->next = *thread_stack;
     *thread_stack = handler;
+    can_push_process_handlers = false;
 }
 
 int
@@ -71,18 +75,18 @@ clog_handler_pop_thread(struct clog_handler *handler)
 int
 clog_process_message(struct clog_message *msg)
 {
-    /* First send the message through the handlers in the process stack, and
-     * then the handlers in the thread stack.  If any of them return
+    /* First send the message through the handlers in the thread stack, and
+     * then the handlers in the process stack.  If any of them return
      * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
 
     struct clog_handler  **thread_stack = thread_stack_get();
     struct clog_handler  *handler;
 
-    for (handler = process_stack; handler != NULL; handler = handler->next) {
+    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
         rii_check(clog_handler_message(handler, msg));
     }
 
-    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
+    for (handler = process_stack; handler != NULL; handler = handler->next) {
         rii_check(clog_handler_message(handler, msg));
     }
 
@@ -93,8 +97,8 @@ int
 clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
                       const char *key, const char *value)
 {
-    /* First send the annotation through the handlers in the process stack, and
-     * then the handlers in the thread stack.  If any of them return
+    /* First send the annotation through the handlers in the thread stack, and
+     * then the handlers in the process stack.  If any of them return
      * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
 
     struct clog_handler  **thread_stack = thread_stack_get();
@@ -104,7 +108,7 @@ clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
     /* We're not supposed to send the annotation to any handlers "above" the
      * current one in the stack. */
 
-    for (handler = process_stack; handler != NULL; handler = handler->next) {
+    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
         if (self == handler) {
             found_handler = true;
         }
@@ -114,7 +118,7 @@ clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
         }
     }
 
-    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
+    for (handler = process_stack; handler != NULL; handler = handler->next) {
         if (self == handler) {
             found_handler = true;
         }

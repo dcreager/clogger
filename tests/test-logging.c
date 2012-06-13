@@ -49,7 +49,7 @@ static struct cork_stream_consumer  *log_consumer;
 static struct clog_handler  *handler;
 
 static void
-push_handler(struct clog_handler *handler)
+clog_handler_push_current(struct clog_handler *handler)
 {
     use_process?
         clog_handler_push_process(handler):
@@ -57,7 +57,7 @@ push_handler(struct clog_handler *handler)
 }
 
 static int
-pop_handler(struct clog_handler *handler)
+clog_handler_pop_current(struct clog_handler *handler)
 {
     return use_process?
         clog_handler_pop_process(handler):
@@ -76,22 +76,21 @@ setup_thread(void)
     use_process = false;
 }
 
-static void
-create_log_handler(void)
-{
-    log_buf = cork_buffer_new();
-    log_consumer = cork_buffer_to_stream_consumer(log_buf);
-    handler = clog_stream_handler_new_consumer(log_consumer);
-    push_handler(handler);
-}
 
-static void
-destroy_log_handler(void)
-{
-    fail_if_error(pop_handler(handler));
-    clog_handler_free(handler);
-    cork_buffer_free(log_buf);
-}
+#define create_log_handler(where) \
+    do { \
+        log_buf = cork_buffer_new(); \
+        log_consumer = cork_buffer_to_stream_consumer(log_buf); \
+        handler = clog_stream_handler_new_consumer(log_consumer); \
+        clog_handler_push_##where(handler); \
+    } while (0)
+
+#define destroy_log_handler(where) \
+    do { \
+        fail_if_error(clog_handler_pop_##where(handler)); \
+        clog_handler_free(handler); \
+        cork_buffer_free(log_buf); \
+    } while (0)
 
 static void
 test_logs(const char *expected)
@@ -151,9 +150,9 @@ START_TEST(test_01)
     /* This is the default, but we're setting it explicitly in case we run the
      * tests with CK_FORK=no */
     clog_set_minimum_level(CLOG_LEVEL_WARNING);
-    create_log_handler();
+    create_log_handler(current);
     test_logs(EXPECTED_01);
-    destroy_log_handler();
+    destroy_log_handler(current);
 }
 END_TEST
 
@@ -174,9 +173,9 @@ START_TEST(test_02)
 {
     DESCRIBE_TEST;
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
-    create_log_handler();
+    create_log_handler(current);
     test_logs(EXPECTED_02);
-    destroy_log_handler();
+    destroy_log_handler(current);
 }
 END_TEST
 
@@ -198,11 +197,11 @@ START_TEST(test_annotate_01)
 {
     DESCRIBE_TEST;
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
-    create_log_handler();
-    push_handler(&annotate);
+    create_log_handler(current);
+    clog_handler_push_current(&annotate);
     test_logs(EXPECTED_annotate_01);
-    fail_if_error(pop_handler(&annotate));
-    destroy_log_handler();
+    fail_if_error(clog_handler_pop_current(&annotate));
+    destroy_log_handler(current);
 }
 END_TEST
 
@@ -223,11 +222,40 @@ START_TEST(test_annotate_02)
 {
     DESCRIBE_TEST;
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
-    push_handler(&annotate);
-    create_log_handler();
+    clog_handler_push_current(&annotate);
+    create_log_handler(current);
     test_logs(EXPECTED_annotate_02);
-    destroy_log_handler();
-    fail_if_error(pop_handler(&annotate));
+    destroy_log_handler(current);
+    fail_if_error(clog_handler_pop_current(&annotate));
+}
+END_TEST
+
+
+/*-----------------------------------------------------------------------
+ * Thread/process ordering
+ */
+
+static const char  *EXPECTED_ordering_01 =
+    "[CRITICAL] test: Critical message\n"
+    "[ERROR   ] test: Error message\n"
+    "[WARNING ] test: Warning message\n"
+    "[NOTICE  ] test: Notice message\n"
+    "[INFO    ] test: Info message\n"
+    "[DEBUG   ] test: Debug message\n";
+
+START_TEST(test_ordering_01)
+{
+    DESCRIBE_TEST;
+    clog_set_minimum_level(CLOG_LEVEL_DEBUG);
+    /* Right now thread handlers are always executed before process handlers, so
+     * the annotations shouldn't be run.  (We're also restricted in that we
+     * can't push process handlers onto the stack after pushing any thread
+     * handlers, which helps enforce this constraint.) */
+    clog_handler_push_process(&annotate);
+    create_log_handler(thread);
+    test_logs(EXPECTED_ordering_01);
+    destroy_log_handler(thread);
+    fail_if_error(clog_handler_pop_process(&annotate));
 }
 END_TEST
 
@@ -247,6 +275,7 @@ test_suite()
     tcase_add_test(tc_process, test_02);
     tcase_add_test(tc_process, test_annotate_01);
     tcase_add_test(tc_process, test_annotate_02);
+    tcase_add_test(tc_process, test_ordering_01);
     suite_add_tcase(s, tc_process);
 
     TCase  *tc_thread = tcase_create("thread");
@@ -255,6 +284,7 @@ test_suite()
     tcase_add_test(tc_thread, test_02);
     tcase_add_test(tc_thread, test_annotate_01);
     tcase_add_test(tc_thread, test_annotate_02);
+    tcase_add_test(tc_thread, test_ordering_01);
     suite_add_tcase(s, tc_thread);
 
     return s;
