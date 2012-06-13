@@ -43,6 +43,8 @@ generate_messages(void)
 
 #undef CLOG_CHANNEL
 
+#define DEFAULT_FORMAT "[%L] %c:#*{ %k=%v} %m"
+
 static bool use_process;
 static struct cork_buffer  *log_buf;
 static struct cork_stream_consumer  *log_consumer;
@@ -81,7 +83,8 @@ setup_thread(void)
     do { \
         log_buf = cork_buffer_new(); \
         log_consumer = cork_buffer_to_stream_consumer(log_buf); \
-        handler = clog_stream_handler_new_consumer(log_consumer); \
+        handler = clog_stream_handler_new_consumer \
+            (log_consumer, DEFAULT_FORMAT); \
         clog_handler_push_##where(handler); \
     } while (0)
 
