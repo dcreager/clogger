@@ -37,8 +37,7 @@
 
 #define BAD(str) \
     do { \
-        struct clog_formatter  *fmt; \
-        fail_unless_error(fmt = clog_formatter_new(str)); \
+        fail_unless_error(clog_formatter_new(str)); \
     } while (0)
 
 START_TEST(test_format_parse_01)
