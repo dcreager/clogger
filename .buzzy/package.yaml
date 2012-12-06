@@ -1,0 +1,7 @@
+name: clogger
+build_dependencies:
+  - pkg-config
+  - check
+dependencies:
+  - libcork
+license: BSD
