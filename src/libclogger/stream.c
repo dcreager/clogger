@@ -40,7 +40,7 @@ struct clog_stream_handler {
 static bool
 clog_stream_handler_claim(struct clog_stream_handler *self)
 {
-    cork_thread_id  tid = cork_thread_get_id();
+    cork_thread_id  tid = cork_current_thread_get_id();
     if (self->active_thread == tid) {
         return false;
     }
