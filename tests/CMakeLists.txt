@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------
-# Copyright © 2011, RedJack, LLC.
+# Copyright © 2011-2013, RedJack, LLC.
 # All rights reserved.
 #
 # Please see the COPYING file in this distribution for license
@@ -33,6 +33,10 @@ make_test(test-logging)
 
 #-----------------------------------------------------------------------
 # Command-line tests
+
+if(TILERA)
+    configure_file(tile-test ${CMAKE_BINARY_DIR}/tile-test COPYONLY)
+endif(TILERA)
 
 find_program(
     CRAM_EXECUTABLE
