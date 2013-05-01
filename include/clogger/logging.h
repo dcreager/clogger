@@ -24,6 +24,9 @@ clog_set_default_format(const char *fmt);
  *
  * CLOG={CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG|TRACE)
  *   sets the minimum log level
+ *
+ * CLOG_FORMAT=[format string]
+ *   the format string to use
  */
 
 int

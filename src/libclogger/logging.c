@@ -38,6 +38,7 @@ int
 clog_setup_logging(void)
 {
     const char  *value;
+    const char  *fmt;
 
 #define test_level(what) \
     if (strcasecmp(value, #what) == 0) { \
@@ -60,7 +61,10 @@ clog_setup_logging(void)
         }
     }
 
-    rip_check(stderr_handler = clog_stderr_handler_new(default_format));
+    value = cork_env_get(NULL, "CLOG_FORMAT");
+    fmt = (value == NULL)? default_format: value;
+
+    rip_check(stderr_handler = clog_stderr_handler_new(fmt));
     clog_handler_push_process(stderr_handler);
     cork_cleanup_at_exit(0, clog_teardown_logging);
     return 0;

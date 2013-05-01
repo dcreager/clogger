@@ -577,9 +577,18 @@ Configuring the default log handler
 The user can use environment variables to configure the behavior of the default
 log handler.
 
+
 .. envvar:: CLOG
 
    Set the minimum log level for the process.  Log messages that are less severe
    than this minimum level will not be output.  Possible (case-insensitive
    values) are: ``CRITICAL``, ``ERROR``, ``WARNING``, ``NOTICE``, ``INFO``,
-   ``DEBUG``, and ``TRACE``.
+   ``DEBUG``, and ``TRACE``.  If this variable is set to an invalid value, the
+   :c:func:`clog_setup_logging` function will return an error.
+
+
+.. envvar:: CLOG_FORMAT
+
+   Set the :ref:`format string <format-string>` to use to render each log
+   message.  If this variable is set to an invalid format string, the
+   :c:func:`clog_setup_logging` function will return an error.
