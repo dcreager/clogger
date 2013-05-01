@@ -1,10 +1,9 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012, RedJack, LLC.
+ * Copyright © 2012-2013, RedJack, LLC.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
@@ -111,6 +110,21 @@ _clog_log_channel(enum clog_level level, const char *channel,
 #define clog_info(...)      clog_log(CLOG_LEVEL_INFO, __VA_ARGS__)
 #define clog_debug(...)     clog_log(CLOG_LEVEL_DEBUG, __VA_ARGS__)
 #define clog_trace(...)     clog_log(CLOG_LEVEL_TRACE, __VA_ARGS__)
+
+#define clog_channel_critical(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_CRITICAL, (ch), __VA_ARGS__)
+#define clog_channel_error(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_ERROR, (ch), __VA_ARGS__)
+#define clog_channel_warning(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_WARNING, (ch), __VA_ARGS__)
+#define clog_channel_notice(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_NOTICE, (ch), __VA_ARGS__)
+#define clog_channel_info(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_INFO, (ch), __VA_ARGS__)
+#define clog_channel_debug(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_DEBUG, (ch), __VA_ARGS__)
+#define clog_channel_trace(ch, ...) \
+    clog_log_channel(CLOG_LEVEL_TRACE, (ch), __VA_ARGS__)
 
 extern enum clog_level  clog_minimum_level;
 

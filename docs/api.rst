@@ -536,3 +536,50 @@ that you can simply call :c:func:`clog_formatter_annotation` in your
 :c:func:`clog_formatter_message` in your :c:member:`~clog_handler.message`
 method.  In both function, you'll also need to check whether you've called
 :c:func:`clog_formatter_start` for the current message.
+
+
+Default logging setup
+---------------------
+
+Clogger provides a helper function for creating and registering a default log
+handler.  This can make it much easier to get started with a new program,
+minimizing the amount of work needed to see your log messages.  There's no
+requirement to use the functions in this section; you might very well end up
+implementation more complex, configurable control over the logging framework.
+
+
+.. function:: int clog_setup_logging(void)
+
+   Create and register a new handler that will print logging messages to stderr.
+   The handler will automatically be unregistered and freed when the process
+   exits.  You can control the format of the log messages using the
+   :c:func:`clog_set_default_format` function.
+
+   The user can also use environment variables (described below) to configure
+   the behavior of the default handler.
+
+
+.. function:: void clog_set_default_format(const char \*fmt)
+
+   Change the format string used by the default log handler to render log
+   messages.  If you never call this function, we'll use a predefined default
+   format:
+
+   .. macro:: CLOG_DEFAULT_FORMAT
+
+      A default log format that prints out the level, channel, and message of
+      each log message: ``[%L] %c: %m``
+
+
+Configuring the default log handler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The user can use environment variables to configure the behavior of the default
+log handler.
+
+.. envvar:: CLOG
+
+   Set the minimum log level for the process.  Log messages that are less severe
+   than this minimum level will not be output.  Possible (case-insensitive
+   values) are: ``CRITICAL``, ``ERROR``, ``WARNING``, ``NOTICE``, ``INFO``,
+   ``DEBUG``, and ``TRACE``.
