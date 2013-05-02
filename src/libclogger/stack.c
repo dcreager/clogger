@@ -79,18 +79,26 @@ clog_process_message(struct clog_message *msg)
      * then the handlers in the process stack.  If any of them return
      * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
 
+    int  rc;
     struct clog_handler  **thread_stack = thread_stack_get();
     struct clog_handler  *handler;
 
     for (handler = *thread_stack; handler != NULL; handler = handler->next) {
-        rii_check(clog_handler_message(handler, msg));
+        ei_check(rc = clog_handler_message(handler, msg));
     }
 
     for (handler = process_stack; handler != NULL; handler = handler->next) {
-        rii_check(clog_handler_message(handler, msg));
+        ei_check(rc = clog_handler_message(handler, msg));
     }
 
     return 0;
+
+error:
+    if (rc == CLOG_SKIP) {
+        return 0;
+    } else {
+        return rc;
+    }
 }
 
 int
@@ -101,6 +109,7 @@ clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
      * then the handlers in the process stack.  If any of them return
      * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
 
+    int  rc;
     struct clog_handler  **thread_stack = thread_stack_get();
     struct clog_handler  *handler;
     bool  found_handler = false;
@@ -114,7 +123,7 @@ clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
         }
 
         if (found_handler) {
-            rii_check(clog_handler_annotation(handler, msg, key, value));
+            ei_check(rc = clog_handler_annotation(handler, msg, key, value));
         }
     }
 
@@ -124,11 +133,18 @@ clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
         }
 
         if (found_handler) {
-            rii_check(clog_handler_annotation(handler, msg, key, value));
+            ei_check(rc = clog_handler_annotation(handler, msg, key, value));
         }
     }
 
     return 0;
+
+error:
+    if (rc == CLOG_SKIP) {
+        return 0;
+    } else {
+        return rc;
+    }
 }
 
 

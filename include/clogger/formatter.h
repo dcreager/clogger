@@ -1,17 +1,16 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012, RedJack, LLC.
+ * Copyright © 2012-2013, RedJack, LLC.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
 #ifndef CLOGGER_FORMATTER_H
 #define CLOGGER_FORMATTER_H
 
-
+#include <libcork/core.h>
 #include <libcork/ds.h>
 
 #include <clogger/api.h>

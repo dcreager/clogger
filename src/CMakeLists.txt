@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------
-# Copyright © 2011, RedJack, LLC.
+# Copyright © 2011-2013, RedJack, LLC.
 # All rights reserved.
 #
-# Please see the COPYING file in this distribution for license
-# details.
+# Please see the COPYING file in this distribution for license details.
 # ----------------------------------------------------------------------
 
 include_directories(../include)
@@ -13,8 +12,10 @@ include_directories(../include)
 # Build the library
 
 set(LIBCLOGGER_SRC
+    libclogger/filter.c
     libclogger/formatter.c
     libclogger/levels.c
+    libclogger/logging.c
     libclogger/null.c
     libclogger/stack.c
     libclogger/stream.c
@@ -56,6 +57,16 @@ target_link_libraries(libclogger
 )
 
 install(TARGETS libclogger DESTINATION lib)
+
+#-----------------------------------------------------------------------
+# clog-test
+
+set(CLOG_TEST_SRC
+    clog-test/clog-test.c
+)
+
+add_executable(clog-test ${CLOG_TEST_SRC})
+target_link_libraries(clog-test libclogger)
 
 #-----------------------------------------------------------------------
 # Generate the pkg-config file
