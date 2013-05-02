@@ -27,6 +27,9 @@ clog_set_default_format(const char *fmt);
  *
  * CLOG_FORMAT=[format string]
  *   the format string to use
+ *
+ * CLOG_CHANNELS=[comma-separated list]
+ *   channel names not in the list will be ignored
  */
 
 int

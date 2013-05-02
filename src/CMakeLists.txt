@@ -12,6 +12,7 @@ include_directories(../include)
 # Build the library
 
 set(LIBCLOGGER_SRC
+    libclogger/filter.c
     libclogger/formatter.c
     libclogger/levels.c
     libclogger/logging.c

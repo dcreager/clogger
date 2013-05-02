@@ -3,8 +3,7 @@
 # Copyright © 2011-2013, RedJack, LLC.
 # All rights reserved.
 #
-# Please see the COPYING file in this distribution for license
-# details.
+# Please see the COPYING file in this distribution for license details.
 # ----------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 2.6)
@@ -84,7 +83,7 @@ endif(CMAKE_COMPILER_IS_GNUCC)
 #-----------------------------------------------------------------------
 # Include our subdirectories
 
-add_subdirectory(docs)
 add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(docs)
