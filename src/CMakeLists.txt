@@ -56,7 +56,7 @@ target_link_libraries(libclogger
     ${CORK_LIBRARIES}
 )
 
-install(TARGETS libclogger DESTINATION lib)
+install(TARGETS libclogger DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 #-----------------------------------------------------------------------
 # clog-test
@@ -74,4 +74,4 @@ target_link_libraries(clog-test libclogger)
 set(prefix ${CMAKE_INSTALL_PREFIX})
 configure_file(clogger.pc.in ${CMAKE_CURRENT_BINARY_DIR}/clogger.pc @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/clogger.pc
-        DESTINATION lib/pkgconfig)
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
