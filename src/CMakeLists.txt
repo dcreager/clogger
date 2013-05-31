@@ -50,8 +50,8 @@ set(LIBCLOGGER_SRC
 add_library(libclogger SHARED ${LIBCLOGGER_SRC})
 set_target_properties(libclogger PROPERTIES
     OUTPUT_NAME clogger
-    VERSION 0.0.0
-    SOVERSION 0)
+    VERSION 1.0.0
+    SOVERSION 1)
 target_link_libraries(libclogger
     ${CORK_LIBRARIES}
 )
