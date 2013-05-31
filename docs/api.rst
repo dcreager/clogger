@@ -333,6 +333,43 @@ messages.
    freeing *consumer* when the handler is freed.
 
 
+Filtering handler
+~~~~~~~~~~~~~~~~~
+
+You can use the :c:type:`clog_keep_filter` handler to restrict which log
+channels are handled.
+
+.. type:: struct clog_keep_filter
+
+.. function:: struct clog_keep_filter \*clog_keep_filter_new(void)
+
+   Create a new filtering log handler.  The handler will initially not allow any
+   log messages to be processed.  You must explicitly add the channels that you
+   want to process.
+
+.. function:: void clog_keep_filter_free(struct clog_keep_filter \*filter)
+
+   Free a filtering log handler.  Note that you can also free the handler by
+   calling :c:func:`clog_handler_free` on the handler instance you get from
+   :c:func:`clog_keep_filter_handler`.  The two are equivalent, and it is your
+   responsibility to only free the handler once.
+
+.. function:: void clog_keep_filter_add(struct clog_keep_filter \*filter, const char \*channel)
+              void clog_keep_filter_add_many(struct clog_keep_filter \*filter, const char \*str)
+
+   Add channel names to the filter.  The ``_add`` variant adds a single channel
+   name.  The ``_add_many`` variant takes in a comma-separated list of channel
+   names, and adds all of those channels to the filter.  These functions are
+   idempotent: adding a channel to the filter multiple times has the same effect
+   as adding it once.
+
+.. function:: struct clog_handler \*clog_keep_filter_handler(struct clog_keep_filter \*filter)
+
+   Return a :c:type:`clog_handler` instance for the filter.  (You must call this
+   function before you can register the filter handler via
+   :c:func:`clog_handler_push_process` or :c:func:`clog_handler_push_thread`.)
+
+
 Writing a new handler
 ---------------------
 
@@ -536,3 +573,66 @@ that you can simply call :c:func:`clog_formatter_annotation` in your
 :c:func:`clog_formatter_message` in your :c:member:`~clog_handler.message`
 method.  In both function, you'll also need to check whether you've called
 :c:func:`clog_formatter_start` for the current message.
+
+
+Default logging setup
+---------------------
+
+Clogger provides a helper function for creating and registering a default log
+handler.  This can make it much easier to get started with a new program,
+minimizing the amount of work needed to see your log messages.  There's no
+requirement to use the functions in this section; you might very well end up
+implementation more complex, configurable control over the logging framework.
+
+
+.. function:: int clog_setup_logging(void)
+
+   Create and register a new handler that will print logging messages to stderr.
+   The handler will automatically be unregistered and freed when the process
+   exits.  You can control the format of the log messages using the
+   :c:func:`clog_set_default_format` function.
+
+   The user can also use environment variables (described below) to configure
+   the behavior of the default handler.
+
+
+.. function:: void clog_set_default_format(const char \*fmt)
+
+   Change the format string used by the default log handler to render log
+   messages.  If you never call this function, we'll use a predefined default
+   format:
+
+   .. macro:: CLOG_DEFAULT_FORMAT
+
+      A default log format that prints out the level, channel, and message of
+      each log message: ``[%L] %c: %m``
+
+
+Configuring the default log handler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The user can use environment variables to configure the behavior of the default
+log handler.
+
+
+.. envvar:: CLOG
+
+   Set the minimum log level for the process.  Log messages that are less severe
+   than this minimum level will not be output.  Possible (case-insensitive
+   values) are: ``CRITICAL``, ``ERROR``, ``WARNING``, ``NOTICE``, ``INFO``,
+   ``DEBUG``, and ``TRACE``.  If this variable is set to an invalid value, the
+   :c:func:`clog_setup_logging` function will return an error.
+
+
+.. envvar:: CLOG_FORMAT
+
+   Set the :ref:`format string <format-string>` to use to render each log
+   message.  If this variable is set to an invalid format string, the
+   :c:func:`clog_setup_logging` function will return an error.
+
+
+.. envvar:: CLOG_CHANNELS
+
+   A comma-separated list of log channels that should be displayed.  Any log
+   message with a channel not in this list will be silently dropped.  If this
+   variable is not set, all log messages will be displayed.
