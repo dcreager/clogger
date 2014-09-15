@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------
-# Copyright © 2011-2013, RedJack, LLC.
+# Copyright © 2011-2014, RedJack, LLC.
 # All rights reserved.
 #
 # Please see the COPYING file in this distribution for license details.
@@ -8,6 +8,7 @@
 
 cmake_minimum_required(VERSION 2.6)
 set(PROJECT_NAME clogger)
+set(RELEASE_DATE 2014-09-15)
 project(${PROJECT_NAME})
 enable_testing()
 
@@ -57,7 +58,7 @@ endif()
 #-----------------------------------------------------------------------
 # Check for prerequisite libraries
 
-pkg_check_modules(CORK REQUIRED libcork>=0.11.0)
+pkg_check_modules(CORK REQUIRED libcork>=0.13.0)
 include_directories(${CORK_INCLUDE_DIRS})
 link_directories(${CORK_LIBRARY_DIRS})
 
@@ -79,9 +80,13 @@ endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_INSTALL_LIBDIR lib CACHE STRING
     "The base name of the installation directory for libraries")
 
-if(CMAKE_COMPILER_IS_GNUCC)
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     add_definitions(-Wall -Werror)
-endif(CMAKE_COMPILER_IS_GNUCC)
+elseif(CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    add_definitions(-Wall -Werror)
+elseif(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+    add_definitions(-Wall -Werror)
+endif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
 
 #-----------------------------------------------------------------------
 # Include our subdirectories

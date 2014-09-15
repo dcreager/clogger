@@ -19,7 +19,7 @@
 
 struct clog_keep_filter {
     struct clog_handler  parent;
-    struct cork_hash_table  channels;
+    struct cork_hash_table  *channels;
 };
 
 
@@ -27,7 +27,7 @@ static int
 clog_keep_filter_check_channel(struct clog_keep_filter *filter,
                                const char *channel)
 {
-    if (cork_hash_table_get(&filter->channels, (void *) channel) == NULL) {
+    if (cork_hash_table_get(filter->channels, (void *) channel) == NULL) {
         return CLOG_SKIP;
     } else {
         return CLOG_CONTINUE;
@@ -53,21 +53,12 @@ clog_keep_filter__message(struct clog_handler *handler,
     return clog_keep_filter_check_channel(filter, msg->channel);
 }
 
-static enum cork_hash_table_map_result
-free_channel(struct cork_hash_table_entry *entry, void *user_data)
-{
-    const char  *channel = entry->key;
-    cork_strfree(channel);
-    return CORK_HASH_TABLE_MAP_DELETE;
-}
-
 static void
 clog_keep_filter__free(struct clog_handler *handler)
 {
     struct clog_keep_filter  *filter =
         cork_container_of(handler, struct clog_keep_filter, parent);
-    cork_hash_table_map(&filter->channels, free_channel, NULL);
-    cork_hash_table_done(&filter->channels);
+    cork_hash_table_free(filter->channels);
     free(filter);
 }
 
@@ -78,7 +69,8 @@ clog_keep_filter_new(void)
     filter->parent.annotation = clog_keep_filter__annotation;
     filter->parent.message = clog_keep_filter__message;
     filter->parent.free = clog_keep_filter__free;
-    cork_string_hash_table_init(&filter->channels, 0);
+    filter->channels = cork_string_hash_table_new(0, 0);
+    cork_hash_table_set_free_key(filter->channels, (cork_free_f) cork_strfree);
     return filter;
 }
 
@@ -95,7 +87,7 @@ clog_keep_filter_add(struct clog_keep_filter *filter, const char *channel)
     struct cork_hash_table_entry  *entry;
 
     entry = cork_hash_table_get_or_create
-        (&filter->channels, (char *) channel, &is_new);
+        (filter->channels, (char *) channel, &is_new);
     if (is_new) {
         const char  *copy = cork_strdup(channel);
         entry->key = (char *) copy;

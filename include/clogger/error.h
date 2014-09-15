@@ -14,26 +14,16 @@
 #include <libcork/core.h>
 
 
-/* hash of "clogger.h" */
-#define CLOG_ERROR  0x9c7ff224
-
-enum clog_error {
-    CLOG_BAD_FORMAT,
-    CLOG_BAD_STACK,
-    CLOG_BAD_CONFIG
-};
-
-#define clog_set_error(code, ...) \
-    (cork_error_set(CLOG_ERROR, code, __VA_ARGS__))
+#define CLOG_BAD_CONFIG               0xffa63a2f
+#define CLOG_BAD_FORMAT               0x12cd1404
+#define CLOG_BAD_STACK                0x37d461f7
 
 #define clog_bad_config(...) \
-    clog_set_error(CLOG_BAD_CONFIG, __VA_ARGS__)
-
+    cork_error_set_printf(CLOG_BAD_CONFIG, __VA_ARGS__)
 #define clog_bad_format(...) \
-    clog_set_error(CLOG_BAD_FORMAT, __VA_ARGS__)
-
+    cork_error_set_printf(CLOG_BAD_FORMAT, __VA_ARGS__)
 #define clog_bad_stack(...) \
-    clog_set_error(CLOG_BAD_STACK, __VA_ARGS__)
+    cork_error_set_printf(CLOG_BAD_STACK, __VA_ARGS__)
 
 
 #endif /* CLOGGER_ERROR_H */
