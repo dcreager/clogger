@@ -8,7 +8,7 @@
 
 cmake_minimum_required(VERSION 2.6)
 set(PROJECT_NAME clogger)
-set(RELEASE_DATE 2013-06-01)
+set(RELEASE_DATE 2014-09-15)
 project(${PROJECT_NAME})
 enable_testing()
 
