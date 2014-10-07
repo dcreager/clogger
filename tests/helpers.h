@@ -1,10 +1,9 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2011-2012, RedJack, LLC.
+ * Copyright © 2011-2014, RedJack, LLC.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
@@ -12,6 +11,25 @@
 #define TESTS_HELPERS_H
 
 #include <libcork/core.h>
+
+
+/*-----------------------------------------------------------------------
+ * Allocators
+ */
+
+/* Use a custom allocator that debugs every allocation. */
+
+static void
+setup_allocator(void)
+{
+    struct cork_alloc  *debug = cork_debug_alloc_new(cork_allocator);
+    cork_set_allocator(debug);
+}
+
+
+/*-----------------------------------------------------------------------
+ * Error reporting
+ */
 
 #if !defined(PRINT_EXPECTED_FAILURES)
 #define PRINT_EXPECTED_FAILURES  0

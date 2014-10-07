@@ -1,10 +1,9 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012, RedJack, LLC.
+ * Copyright © 2012-2014, RedJack, LLC.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
@@ -112,7 +111,7 @@ raw_segment__free(struct segment *vself)
     struct raw_segment  *self =
         cork_container_of(vself, struct raw_segment, parent);
     cork_buffer_done(&self->content);
-    free(self);
+    cork_delete(struct raw_segment, self);
 }
 
 static int
@@ -211,7 +210,7 @@ msg_segment__free(struct segment *vself)
     struct msg_segment  *self =
         cork_container_of(vself, struct msg_segment, parent);
     cork_buffer_done(&self->value);
-    free(self);
+    cork_delete(struct msg_segment, self);
 }
 
 static int
@@ -263,7 +262,7 @@ raw_annotation_segment__free(struct annotation_segment *vself)
     struct raw_annotation_segment  *self =
         cork_container_of(vself, struct raw_annotation_segment, parent);
     cork_buffer_done(&self->content);
-    free(self);
+    cork_delete(struct raw_annotation_segment, self);
 }
 
 static int
@@ -298,7 +297,7 @@ key_segment__annotation(struct annotation_segment *self,
 static void
 key_segment__free(struct annotation_segment *self)
 {
-    free(self);
+    cork_delete(struct annotation_segment, self);
 }
 
 static int
@@ -329,7 +328,7 @@ value_segment__annotation(struct annotation_segment *self,
 static void
 value_segment__free(struct annotation_segment *self)
 {
-    free(self);
+    cork_delete(struct annotation_segment, self);
 }
 
 static int
@@ -420,7 +419,7 @@ var_segment__free(struct segment *vself)
         segment->free(segment);
     }
     cork_array_done(&self->segments);
-    free(self);
+    cork_delete(struct var_segment, self);
 }
 
 static struct var_segment *
@@ -520,7 +519,7 @@ multi_segment__free(struct segment *vself)
         segment->free(segment);
     }
     cork_array_done(&self->segments);
-    free(self);
+    cork_delete(struct multi_segment, self);
 }
 
 static struct multi_segment *
@@ -720,7 +719,7 @@ clog_formatter_free(struct clog_formatter *self)
         segment->free(segment);
     }
     cork_array_done(&self->segments);
-    free(self);
+    cork_delete(struct clog_formatter, self);
 }
 
 struct clog_formatter *

@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2013, RedJack, LLC.
+ * Copyright © 2013-2014, RedJack, LLC.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -59,7 +59,7 @@ clog_keep_filter__free(struct clog_handler *handler)
     struct clog_keep_filter  *filter =
         cork_container_of(handler, struct clog_keep_filter, parent);
     cork_hash_table_free(filter->channels);
-    free(filter);
+    cork_delete(struct clog_keep_filter, filter);
 }
 
 struct clog_keep_filter *
