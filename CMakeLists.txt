@@ -8,7 +8,7 @@
 
 cmake_minimum_required(VERSION 2.6)
 set(PROJECT_NAME clogger)
-set(RELEASE_DATE 2014-09-15)
+set(RELEASE_DATE 2014-10-16)
 project(${PROJECT_NAME})
 enable_testing()
 
@@ -58,7 +58,7 @@ endif()
 #-----------------------------------------------------------------------
 # Check for prerequisite libraries
 
-pkg_check_modules(CORK REQUIRED libcork>=0.13.0)
+pkg_check_modules(CORK REQUIRED libcork>=0.14.0)
 include_directories(${CORK_INCLUDE_DIRS})
 link_directories(${CORK_LIBRARY_DIRS})
 

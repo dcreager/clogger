@@ -1,10 +1,9 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012, RedJack, LLC.
+ * Copyright © 2012-2014, RedJack, LLC.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
@@ -30,7 +29,7 @@ clog_null_handler__message(struct clog_handler *self, struct clog_message *msg)
 static void
 clog_null_handler__free(struct clog_handler *self)
 {
-    free(self);
+    cork_delete(struct clog_handler, self);
 }
 
 struct clog_handler *

@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2013, RedJack, LLC.
+ * Copyright © 2013-2014, RedJack, LLC.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -18,6 +18,9 @@
 int
 main(int argc, const char **argv)
 {
+    struct cork_alloc  *debug = cork_debug_alloc_new(cork_allocator);
+    cork_set_allocator(debug);
+
     if (clog_setup_logging() != 0) {
         fprintf(stderr, "%s\n", cork_error_message());
         exit(EXIT_FAILURE);

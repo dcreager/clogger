@@ -11,4 +11,4 @@ Version: @VERSION@
 URL: https://github.com/redjack/clogger/
 Libs: -L${libdir} -lclogger
 Cflags: -I${includedir}
-Requires: libcork >= 0.13.0
+Requires: libcork >= 0.14.0
