@@ -1,7 +1,6 @@
 /build/
 /.build/
 
-RELEASE-VERSION
 clogger.pc
 
 /clogger*.tar.gz
