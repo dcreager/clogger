@@ -37,7 +37,7 @@ add_c_library(
     libclogger
     OUTPUT_NAME clogger
     PKGCONFIG_NAME clogger
-    VERSION 2.1.0
+    VERSION 2.2.0
     SOURCES
         libclogger/filter.c
         libclogger/formatter.c
