@@ -1,6 +1,8 @@
 Overview
 --------
 
+[![Build Status](https://img.shields.io/travis/redjack/clogger/develop.svg)](https://travis-ci.org/redjack/clogger)
+
 The Clogger library provides a simple, high performance logging framework based
 on the ideas in the [Logbook](http://packages.python.org/Logbook/) project.
 

@@ -1,7 +1,6 @@
 /build/
 /.build/
 
-RELEASE-VERSION
 clogger.pc
 
 /clogger*.tar.gz
@@ -11,3 +10,5 @@ clogger.pc
 *.os
 *.so
 *.dylib
+
+!.travis.yml
