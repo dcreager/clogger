@@ -19,7 +19,14 @@
 #include "clogger/error.h"
 
 
-enum clog_level  clog_minimum_level = CLOG_LEVEL_WARNING;
+struct clog_level_config clog_level_config = {
+    CLOG_LEVEL_WARNING,
+    13,
+};
+
+/* Include a linkable but not visible copy of this for any targets still
+ * compiled against 1.0. */
+enum clog_level clog_minimum_level = CLOG_LEVEL_WARNING;
 
 static bool can_push_process_handlers = true;
 static struct clog_handler  *process_stack = NULL;
@@ -152,6 +159,9 @@ void
 clog_set_minimum_level(enum clog_level level)
 {
     clog_minimum_level = level;
+    enum clog_level* mutable_minimum_level =
+            (enum clog_level*) &clog_level_config.minimum_level;
+    *mutable_minimum_level = level;
 }
 
 void

@@ -96,9 +96,10 @@ _clog_log_channel(enum clog_level level, const char *channel,
                   const char *format, ...)
     CORK_ATTR_PRINTF(3,4);
 
-#define clog_log_channel(level, channel, ...) \
-    (CORK_UNLIKELY((level) <= clog_minimum_level)? \
-     _clog_log_channel((level), (channel), __VA_ARGS__): (void) 0)
+#define clog_log_channel(level, channel, ...)                                  \
+    (CORK_UNLIKELY((level) <= clog_level_config.minimum_level) ?               \
+             _clog_log_channel((level), (channel), __VA_ARGS__) :              \
+             (void) 0)
 
 #define clog_log(level, ...) \
     clog_log_channel((level), CLOG_CHANNEL, __VA_ARGS__)
@@ -126,7 +127,12 @@ _clog_log_channel(enum clog_level level, const char *channel,
 #define clog_channel_trace(ch, ...) \
     clog_log_channel(CLOG_LEVEL_TRACE, (ch), __VA_ARGS__)
 
-extern enum clog_level  clog_minimum_level;
+struct clog_level_config {
+    const enum clog_level minimum_level;
+    unsigned int unused;
+};
+
+extern struct clog_level_config clog_level_config;
 
 void
 clog_set_minimum_level(enum clog_level level);
