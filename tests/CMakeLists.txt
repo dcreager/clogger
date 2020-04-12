@@ -9,6 +9,7 @@
 #-----------------------------------------------------------------------
 # Build the test cases
 
+add_c_test(test-benchmark)
 add_c_test(test-formatter)
 add_c_test(test-logging)
 
