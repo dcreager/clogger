@@ -11,6 +11,7 @@
 #define CLOGGER_API_H
 
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include <libcork/core.h>
 
@@ -92,13 +93,19 @@ clog_annotate_message(struct clog_handler *handler, struct clog_message *msg,
                       const char *key, const char *value);
 
 void
-_clog_log_channel(enum clog_level level, const char *channel,
-                  const char *format, ...)
-    CORK_ATTR_PRINTF(3,4);
+clog_annotate_message_field(struct clog_message* msg, const char* key,
+                            const char* value);
 
-#define clog_log_channel(level, channel, ...) \
-    (CORK_UNLIKELY((level) <= clog_minimum_level)? \
-     _clog_log_channel((level), (channel), __VA_ARGS__): (void) 0)
+void
+_clog_init_message(struct clog_message* msg, enum clog_level level,
+                   const char* channel);
+
+void
+_clog_finish_message(struct clog_message* msg, const char* format, ...)
+        CORK_ATTR_PRINTF(2, 3);
+
+#define clog_log_channel(level, channel, ...)                                  \
+    clog_event_channel((level), (channel), __VA_ARGS__) {}
 
 #define clog_log(level, ...) \
     clog_log_channel((level), CLOG_CHANNEL, __VA_ARGS__)
@@ -125,6 +132,51 @@ _clog_log_channel(enum clog_level level, const char *channel,
     clog_log_channel(CLOG_LEVEL_DEBUG, (ch), __VA_ARGS__)
 #define clog_channel_trace(ch, ...) \
     clog_log_channel(CLOG_LEVEL_TRACE, (ch), __VA_ARGS__)
+
+/* This is pretty gross!  It's based on a technique described in [1].  The goal
+ * is to take
+ *
+ *     clog_event_channel(level, channel, fmt, args) {
+ *        fields
+ *     }
+ *
+ * and turn it into something equivalent to
+ *
+ *     if (level <= clog_minimum_level) {
+ *         struct clog_message msg;
+ *         _clog_init_message(&msg, level, channel, fmt, args);
+ *         fields;
+ *         _clog_finish_message(&msg);
+ *     }
+ *
+ * [1] https://stackoverflow.com/questions/866012/is-there-a-way-to-define-variables-of-two-different-types-in-a-for-loop-initiali */
+/* clang-format off */
+#define clog_event_channel(level, channel, ...)                                \
+    for (bool __continue = true; __continue; )                                 \
+    for (enum clog_level __level = (level); __continue; )                      \
+    for (__continue = (__level <= clog_minimum_level); __continue; )           \
+    for (const char* __channel = (channel); __continue; )                      \
+    for (struct clog_message __msg; __continue; )                              \
+    for (_clog_init_message(&__msg, __level, __channel); __continue; )         \
+    for (int __i = 0; __i < 2; __i++)                                          \
+    if (__i == 1) {                                                            \
+        _clog_finish_message(&__msg, __VA_ARGS__);                             \
+        __continue = false;                                                    \
+    } else
+/* clang-format on */
+
+#define clog_pending_event() (&__msg)
+
+#define clog_event(level, ...)                                                 \
+    clog_event_channel((level), CLOG_CHANNEL, __VA_ARGS__)
+
+#define cloge_critical(...) clog_event(CLOG_LEVEL_CRITICAL, __VA_ARGS__)
+#define cloge_error(...) clog_event(CLOG_LEVEL_ERROR, __VA_ARGS__)
+#define cloge_warning(...) clog_event(CLOG_LEVEL_WARNING, __VA_ARGS__)
+#define cloge_notice(...) clog_event(CLOG_LEVEL_NOTICE, __VA_ARGS__)
+#define cloge_info(...) clog_event(CLOG_LEVEL_INFO, __VA_ARGS__)
+#define cloge_debug(...) clog_event(CLOG_LEVEL_DEBUG, __VA_ARGS__)
+#define cloge_trace(...) clog_event(CLOG_LEVEL_TRACE, __VA_ARGS__)
 
 extern enum clog_level  clog_minimum_level;
 

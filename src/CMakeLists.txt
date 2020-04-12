@@ -40,6 +40,7 @@ add_c_library(
     PKGCONFIG_NAME clogger
     VERSION_INFO 2:2:0
     SOURCES
+        libclogger/fields.c
         libclogger/filter.c
         libclogger/formatter.c
         libclogger/levels.c

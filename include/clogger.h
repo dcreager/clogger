@@ -13,6 +13,7 @@
 /* Include all of the parts */
 #include <clogger/api.h>
 #include <clogger/error.h>
+#include <clogger/fields.h>
 #include <clogger/formatter.h>
 #include <clogger/handlers.h>
 #include <clogger/logging.h>
