@@ -47,6 +47,7 @@ add_c_library(
         libclogger/logging.c
         libclogger/null.c
         libclogger/stack.c
+        libclogger/stash.c
         libclogger/stream.c
     LIBRARIES
         libcork

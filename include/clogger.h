@@ -17,5 +17,6 @@
 #include <clogger/formatter.h>
 #include <clogger/handlers.h>
 #include <clogger/logging.h>
+#include <clogger/stash.h>
 
 #endif /* CLOGGER_H */
