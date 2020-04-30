@@ -15,6 +15,7 @@
 
 #include "clogger/api.h"
 #include "clogger/fields.h"
+#include "clogger/helpers/fields.h"
 #include "clogger/stash.h"
 
 #include "helpers.h"
@@ -35,22 +36,22 @@ START_TEST(test_stash)
     clog_handler_push_process(handler);
 
     cloge_critical ("Critical event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_error ("Error event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_warning ("Warning event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_notice ("Notice event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_info ("Info event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_debug ("Debug event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
 
     ck_assert(clog_stash_contains_event(stash, "__message",

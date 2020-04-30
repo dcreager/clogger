@@ -20,6 +20,7 @@
 #include "clogger/api.h"
 #include "clogger/fields.h"
 #include "clogger/handlers.h"
+#include "clogger/helpers/fields.h"
 
 #include "helpers.h"
 
@@ -51,22 +52,22 @@ generate_messages(void)
      * will be consistent: Critical, Warning, and Info will get true; Error,
      * Notice, and Debug will get false. */
     cloge_critical ("Critical %s", bump_counter() ? "event" : "noooooo") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_error ("Error %s", bump_counter() ? "noooooo" : "event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_warning ("Warning %s", bump_counter() ? "event" : "noooooo") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_notice ("Notice %s", bump_counter() ? "noooooo":"event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_info ("Info %s", bump_counter() ? "event" : "noooooo") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
     cloge_debug ("Debug %s", bump_counter() ? "noooooo" : "event") {
-        clog_add_string_field(clog_pending_event(), "field1", "hello");
+        clf(field1, string, "hello");
     }
 }
 

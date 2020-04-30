@@ -14,6 +14,7 @@
 #include "clogger/api.h"
 #include "clogger/fields.h"
 #include "clogger/handlers.h"
+#include "clogger/helpers/fields.h"
 
 #define CLOG_CHANNEL "benchmark"
 #define DEFAULT_FORMAT "[%L] %c:#*{ %k=%v} %m"
@@ -43,7 +44,7 @@ main(int argc, const char** argv)
     for (size_t i = 0; i < iteration_count; i++) {
         cloge_debug ("Interesting things are%s happening",
                      ((i % 2) == 0) ? "" : " not") {
-            clog_add_string_field(clog_pending_event(), "field1", "value");
+            clf(field1, string, "value");
         }
     }
 
