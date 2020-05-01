@@ -72,8 +72,8 @@ clog_handler_pop_thread(struct clog_handler *handler)
 }
 
 
-int
-clog_process_message(struct clog_message *msg)
+static int
+clog_process_message_(struct clog_message *msg, va_list args)
 {
     /* First send the message through the handlers in the thread stack, and
      * then the handlers in the process stack.  If any of them return
@@ -84,11 +84,17 @@ clog_process_message(struct clog_message *msg)
     struct clog_handler  *handler;
 
     for (handler = *thread_stack; handler != NULL; handler = handler->next) {
-        ei_check(rc = clog_handler_message(handler, msg));
+        va_copy(msg->args, args);
+        rc = clog_handler_message(handler, msg);
+        va_end(msg->args);
+        ei_check(rc);
     }
 
     for (handler = process_stack; handler != NULL; handler = handler->next) {
-        ei_check(rc = clog_handler_message(handler, msg));
+        va_copy(msg->args, args);
+        rc = clog_handler_message(handler, msg);
+        va_end(msg->args);
+        ei_check(rc);
     }
 
     return 0;
@@ -99,6 +105,16 @@ error:
     } else {
         return rc;
     }
+}
+
+int
+clog_process_message(struct clog_message *msg)
+{
+    va_list args;
+    va_copy(args, msg->args);
+    int rc = clog_process_message_(msg, args);
+    va_end(args);
+    return rc;
 }
 
 int
@@ -194,10 +210,11 @@ error:
 void
 _clog_finish_message(struct clog_message* msg, const char* format, ...)
 {
+    va_list args;
     msg->format = format;
-    va_start(msg->args, format);
-    clog_process_message(msg);
-    va_end(msg->args);
+    va_start(args, format);
+    clog_process_message_(msg, args);
+    va_end(args);
 }
 
 /* Include a linkable (but deprecated) copy of this for any existing code
@@ -209,10 +226,11 @@ _clog_log_channel(enum clog_level level, const char* channel,
     /* Otherwise create a clog_message object and pass it off to all of the
      * handlers. */
     struct clog_message  msg;
+    va_list args;
     msg.level = level;
     msg.channel = channel;
     msg.format = format;
-    va_start(msg.args, format);
-    clog_process_message(&msg);
-    va_end(msg.args);
+    va_start(args, format);
+    clog_process_message_(&msg, args);
+    va_end(args);
 }
