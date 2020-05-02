@@ -38,7 +38,7 @@ add_c_library(
     libclogger
     OUTPUT_NAME clogger
     PKGCONFIG_NAME clogger
-    VERSION_INFO 2:2:0
+    VERSION_INFO 3:0:1
     SOURCES
         libclogger/fields.c
         libclogger/filter.c
