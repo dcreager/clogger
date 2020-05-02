@@ -18,7 +18,9 @@
 #include <libcork/helpers/errors.h>
 
 #include "clogger/api.h"
+#include "clogger/fields.h"
 #include "clogger/handlers.h"
+#include "clogger/helpers/fields.h"
 
 #include "helpers.h"
 
@@ -29,6 +31,14 @@
 
 #define CLOG_CHANNEL "test"
 
+static unsigned int counter = 0;
+
+static bool
+bump_counter(void)
+{
+    return (counter++ % 2) == 0;
+}
+
 static void
 generate_messages(void)
 {
@@ -38,6 +48,27 @@ generate_messages(void)
     clog_notice("Notice message");
     clog_info("Info message");
     clog_debug("Debug message");
+    /* Because there are an even number of calls to bump_counter, the results
+     * will be consistent: Critical, Warning, and Info will get true; Error,
+     * Notice, and Debug will get false. */
+    cloge_critical ("Critical %s", bump_counter() ? "event" : "noooooo") {
+        clf(field1, string, "hello");
+    }
+    cloge_error ("Error %s", bump_counter() ? "noooooo" : "event") {
+        clf(field1, string, "hello");
+    }
+    cloge_warning ("Warning %s", bump_counter() ? "event" : "noooooo") {
+        clf(field1, string, "hello");
+    }
+    cloge_notice ("Notice %s", bump_counter() ? "noooooo":"event") {
+        clf(field1, string, "hello");
+    }
+    cloge_info ("Info %s", bump_counter() ? "event" : "noooooo") {
+        clf(field1, string, "hello");
+    }
+    cloge_debug ("Debug %s", bump_counter() ? "noooooo" : "event") {
+        clf(field1, string, "hello");
+    }
 }
 
 #undef CLOG_CHANNEL
@@ -141,10 +172,13 @@ struct clog_handler  annotate = {
  * Defaults for everything
  */
 
-static const char  *EXPECTED_01 =
-    "[CRITICAL] test: Critical message\n"
-    "[ERROR   ] test: Error message\n"
-    "[WARNING ] test: Warning message\n";
+static const char* EXPECTED_01 =
+        "[CRITICAL] test: Critical message\n"
+        "[ERROR   ] test: Error message\n"
+        "[WARNING ] test: Warning message\n"
+        "[CRITICAL] test: field1=hello Critical event\n"
+        "[ERROR   ] test: field1=hello Error event\n"
+        "[WARNING ] test: field1=hello Warning event\n";
 
 START_TEST(test_01)
 {
@@ -163,13 +197,19 @@ END_TEST
  * Show all levels
  */
 
-static const char  *EXPECTED_02 =
-    "[CRITICAL] test: Critical message\n"
-    "[ERROR   ] test: Error message\n"
-    "[WARNING ] test: Warning message\n"
-    "[NOTICE  ] test: Notice message\n"
-    "[INFO    ] test: Info message\n"
-    "[DEBUG   ] test: Debug message\n";
+static const char* EXPECTED_02 =
+        "[CRITICAL] test: Critical message\n"
+        "[ERROR   ] test: Error message\n"
+        "[WARNING ] test: Warning message\n"
+        "[NOTICE  ] test: Notice message\n"
+        "[INFO    ] test: Info message\n"
+        "[DEBUG   ] test: Debug message\n"
+        "[CRITICAL] test: field1=hello Critical event\n"
+        "[ERROR   ] test: field1=hello Error event\n"
+        "[WARNING ] test: field1=hello Warning event\n"
+        "[NOTICE  ] test: field1=hello Notice event\n"
+        "[INFO    ] test: field1=hello Info event\n"
+        "[DEBUG   ] test: field1=hello Debug event\n";
 
 START_TEST(test_02)
 {
@@ -186,13 +226,19 @@ END_TEST
  * Annotations
  */
 
-static const char  *EXPECTED_annotate_01 =
-    "[CRITICAL] test: key1=value1 key2=value2 Critical message\n"
-    "[ERROR   ] test: key1=value1 key2=value2 Error message\n"
-    "[WARNING ] test: key1=value1 key2=value2 Warning message\n"
-    "[NOTICE  ] test: key1=value1 key2=value2 Notice message\n"
-    "[INFO    ] test: key1=value1 key2=value2 Info message\n"
-    "[DEBUG   ] test: key1=value1 key2=value2 Debug message\n";
+static const char* EXPECTED_annotate_01 =
+        "[CRITICAL] test: key1=value1 key2=value2 Critical message\n"
+        "[ERROR   ] test: key1=value1 key2=value2 Error message\n"
+        "[WARNING ] test: key1=value1 key2=value2 Warning message\n"
+        "[NOTICE  ] test: key1=value1 key2=value2 Notice message\n"
+        "[INFO    ] test: key1=value1 key2=value2 Info message\n"
+        "[DEBUG   ] test: key1=value1 key2=value2 Debug message\n"
+        "[CRITICAL] test: field1=hello key1=value1 key2=value2 Critical event\n"
+        "[ERROR   ] test: field1=hello key1=value1 key2=value2 Error event\n"
+        "[WARNING ] test: field1=hello key1=value1 key2=value2 Warning event\n"
+        "[NOTICE  ] test: field1=hello key1=value1 key2=value2 Notice event\n"
+        "[INFO    ] test: field1=hello key1=value1 key2=value2 Info event\n"
+        "[DEBUG   ] test: field1=hello key1=value1 key2=value2 Debug event\n";
 
 
 START_TEST(test_annotate_01)
@@ -212,13 +258,19 @@ END_TEST
  * Skipped annotations
  */
 
-static const char  *EXPECTED_annotate_02 =
-    "[CRITICAL] test: Critical message\n"
-    "[ERROR   ] test: Error message\n"
-    "[WARNING ] test: Warning message\n"
-    "[NOTICE  ] test: Notice message\n"
-    "[INFO    ] test: Info message\n"
-    "[DEBUG   ] test: Debug message\n";
+static const char* EXPECTED_annotate_02 =
+        "[CRITICAL] test: Critical message\n"
+        "[ERROR   ] test: Error message\n"
+        "[WARNING ] test: Warning message\n"
+        "[NOTICE  ] test: Notice message\n"
+        "[INFO    ] test: Info message\n"
+        "[DEBUG   ] test: Debug message\n"
+        "[CRITICAL] test: field1=hello Critical event\n"
+        "[ERROR   ] test: field1=hello Error event\n"
+        "[WARNING ] test: field1=hello Warning event\n"
+        "[NOTICE  ] test: field1=hello Notice event\n"
+        "[INFO    ] test: field1=hello Info event\n"
+        "[DEBUG   ] test: field1=hello Debug event\n";
 
 START_TEST(test_annotate_02)
 {
@@ -237,13 +289,19 @@ END_TEST
  * Thread/process ordering
  */
 
-static const char  *EXPECTED_ordering_01 =
-    "[CRITICAL] test: Critical message\n"
-    "[ERROR   ] test: Error message\n"
-    "[WARNING ] test: Warning message\n"
-    "[NOTICE  ] test: Notice message\n"
-    "[INFO    ] test: Info message\n"
-    "[DEBUG   ] test: Debug message\n";
+static const char* EXPECTED_ordering_01 =
+        "[CRITICAL] test: Critical message\n"
+        "[ERROR   ] test: Error message\n"
+        "[WARNING ] test: Warning message\n"
+        "[NOTICE  ] test: Notice message\n"
+        "[INFO    ] test: Info message\n"
+        "[DEBUG   ] test: Debug message\n"
+        "[CRITICAL] test: field1=hello Critical event\n"
+        "[ERROR   ] test: field1=hello Error event\n"
+        "[WARNING ] test: field1=hello Warning event\n"
+        "[NOTICE  ] test: field1=hello Notice event\n"
+        "[INFO    ] test: field1=hello Info event\n"
+        "[DEBUG   ] test: field1=hello Debug event\n";
 
 START_TEST(test_ordering_01)
 {
