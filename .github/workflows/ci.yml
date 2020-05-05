@@ -1,0 +1,37 @@
+name: Continuous integration
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: "0 0 1,15 * *"
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
+    env:
+      OS_NAME: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fetch everything (for automatic version detection)
+        run: git fetch --prune --unshallow
+
+      - name: Install dependencies
+        run: scripts/install
+
+      - name: Build dependencies and code
+        run: buzzy build
+
+      - name: Run test suite
+        run: buzzy test
+
+      - name: Run distcheck
+        run: scripts/distcheck
