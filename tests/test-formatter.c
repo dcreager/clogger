@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2014, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -70,7 +70,7 @@ END_TEST
  * Formatting results
  */
 
-static int
+static void
 test_message(struct clog_formatter *self, struct cork_buffer *dest,
              enum clog_level level, const char *channel, const char *fmt, ...)
 {
@@ -79,7 +79,7 @@ test_message(struct clog_formatter *self, struct cork_buffer *dest,
     msg.channel = channel;
     msg.format = fmt;
     va_start(msg.args, fmt);
-    return clog_formatter_finish(self, &msg, dest);
+    clog_formatter_finish(self, &msg, dest);
 }
 
 START_TEST(test_format_01)
@@ -108,9 +108,7 @@ START_TEST(test_format_01)
     fail_if_error(clog_formatter_start(fmt));
     fail_if_error(clog_formatter_annotation(fmt, "var1", "value1"));
     fail_if_error(clog_formatter_annotation(fmt, "var2", "value2"));
-    fail_if_error(test_message
-                  (fmt, &dest, CLOG_LEVEL_INFO,
-                   "test", "This is only a test."));
+    test_message(fmt, &dest, CLOG_LEVEL_INFO, "test", "This is only a test.");
 
     ck_assert_str_eq((char *) dest.buf, expected);
     cork_buffer_done(&dest);

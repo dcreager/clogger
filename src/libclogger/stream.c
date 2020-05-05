@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2014, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -78,10 +78,10 @@ clog_stream_handler__annotation(struct clog_handler *vself,
 
     if (clog_stream_handler_claim(self)) {
         /* Just claimed the lock; clear the buffer */
-        rii_check(clog_formatter_start(self->fmt));
+        clog_formatter_start(self->fmt);
     }
 
-    rii_check(clog_formatter_annotation(self->fmt, key, value));
+    clog_formatter_annotation(self->fmt, key, value);
     return CLOG_CONTINUE;
 }
 
@@ -94,10 +94,10 @@ clog_stream_handler__message(struct clog_handler *vself,
 
     if (clog_stream_handler_claim(self)) {
         /* Just claimed the lock; clear the buffer */
-        rii_check(clog_formatter_start(self->fmt));
+        clog_formatter_start(self->fmt);
     }
 
-    rii_check(clog_formatter_finish(self->fmt, msg, &self->buf));
+    clog_formatter_finish(self->fmt, msg, &self->buf);
     cork_buffer_append(&self->buf, "\n", 1);
     rii_check(cork_stream_consumer_data
               (self->consumer, self->buf.buf, self->buf.size,
