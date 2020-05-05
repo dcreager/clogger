@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2013, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -44,32 +44,44 @@ struct clog_message {
 };
 
 
-#define CLOG_CONTINUE  0
-#define CLOG_FAILURE  -1
-#define CLOG_SKIP     -2
-
 struct clog_handler {
-    int
-    (*annotation)(struct clog_handler *handler, struct clog_message *msg,
-                  const char *key, const char *value);
+    int (*annotation)(struct clog_handler* handler, struct clog_message* msg,
+                      const char* key, const char* value);
 
-    int
-    (*message)(struct clog_handler *handler, struct clog_message *msg);
+    int (*message)(struct clog_handler* handler, struct clog_message* msg);
 
-    void
-    (*free)(struct clog_handler *handler);
+    void (*free)(struct clog_handler* handler);
 
-    struct clog_handler  *next;
+    struct clog_handler* next;
 };
 
-#define clog_handler_annotation(handler, msg, key, value) \
-    ((handler)->annotation((handler), (msg), (key), (value)))
+CORK_INLINE
+int
+clog_handler_annotation(struct clog_handler* handler, struct clog_message* msg,
+                        const char* key, const char* value)
+{
+    if (handler == NULL) {
+        return 0;
+    }
+    return handler->annotation(handler, msg, key, value);
+}
 
-#define clog_handler_message(handler, msg) \
-    ((handler)->message((handler), (msg)))
+CORK_INLINE
+int
+clog_handler_message(struct clog_handler* handler, struct clog_message* msg)
+{
+    if (handler == NULL) {
+        return 0;
+    }
+    return handler->message(handler, msg);
+}
 
-#define clog_handler_free(handler) \
-    ((handler)->free((handler)))
+CORK_INLINE
+void
+clog_handler_free(struct clog_handler* handler)
+{
+    handler->free(handler);
+}
 
 
 void
@@ -86,15 +98,11 @@ clog_handler_pop_thread(struct clog_handler *handler);
 
 
 int
-clog_process_message(struct clog_message *msg);
+clog_process_message(struct clog_message* msg);
 
 int
-clog_annotate_message(struct clog_handler *handler, struct clog_message *msg,
-                      const char *key, const char *value);
-
-void
-clog_annotate_message_field(struct clog_message* msg, const char* key,
-                            const char* value);
+clog_annotate_message(struct clog_message* msg, const char* key,
+                      const char* value);
 
 void
 _clog_init_message(struct clog_message* msg, enum clog_level level,

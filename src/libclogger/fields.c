@@ -19,7 +19,7 @@ void
 clog_add_string_field(struct clog_message* msg, const char* key,
                       const char* value)
 {
-    clog_annotate_message_field(msg, key, value);
+    clog_annotate_message(msg, key, value);
 }
 
 void
@@ -31,6 +31,6 @@ clog_add_printf_field(struct clog_message* msg, const char* key,
     va_start(args, fmt);
     cork_buffer_vprintf(&buf, fmt, args);
     va_end(args);
-    clog_annotate_message_field(msg, key, buf.buf);
+    clog_annotate_message(msg, key, buf.buf);
     cork_buffer_done(&buf);
 }

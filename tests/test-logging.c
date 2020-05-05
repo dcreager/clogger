@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2014, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -143,15 +143,15 @@ static int
 annotate__annotation(struct clog_handler *log, struct clog_message *msg,
                      const char *key, const char *value)
 {
-    return 0;
+    return clog_handler_annotation(log->next, msg, key, value);
 }
 
 static int
 annotate__message(struct clog_handler *log, struct clog_message *msg)
 {
-    rii_check(clog_annotate_message(log, msg, "key1", "value1"));
-    rii_check(clog_annotate_message(log, msg, "key2", "value2"));
-    return 0;
+    rii_check(clog_handler_annotation(log->next, msg, "key1", "value1"));
+    rii_check(clog_handler_annotation(log->next, msg, "key2", "value2"));
+    return clog_handler_message(log->next, msg);
 }
 
 static void

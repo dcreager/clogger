@@ -92,69 +92,19 @@ clog_get_stack(void)
     }
 }
 
-static int
-clog_process_message_(struct clog_message *msg, va_list args)
+int
+clog_process_message(struct clog_message* msg)
 {
-    /* First send the message through the handlers in the thread stack, and
-     * then the handlers in the process stack.  If any of them return
-     * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
-
-    struct clog_handler* handler;
-    for (handler = clog_get_stack(); handler != NULL; handler = handler->next) {
-        int rc;
-        va_copy(msg->args, args);
-        rc = clog_handler_message(handler, msg);
-        va_end(msg->args);
-        if (rc == CLOG_SKIP) {
-            return 0;
-        } else if (rc != 0) {
-            return rc;
-        }
-    }
-
-    return 0;
+    struct clog_handler* handler = clog_get_stack();
+    return clog_handler_message(handler, msg);
 }
 
 int
-clog_process_message(struct clog_message *msg)
+clog_annotate_message(struct clog_message* msg, const char* key,
+                      const char* value)
 {
-    va_list args;
-    va_copy(args, msg->args);
-    int rc = clog_process_message_(msg, args);
-    va_end(args);
-    return rc;
-}
-
-int
-clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
-                      const char *key, const char *value)
-{
-    /* First send the annotation through the handlers in the thread stack, and
-     * then the handlers in the process stack.  If any of them return
-     * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
-
-    bool found_handler = false;
-    struct clog_handler* handler;
-
-    /* We're not supposed to send the annotation to any handlers "above" the
-     * current one in the stack. */
-
-    for (handler = clog_get_stack(); handler != NULL; handler = handler->next) {
-        if (self == handler) {
-            found_handler = true;
-        }
-
-        if (found_handler) {
-            int rc = clog_handler_annotation(handler, msg, key, value);
-            if (rc == CLOG_SKIP) {
-                return 0;
-            } else if (rc != 0) {
-                return rc;
-            }
-        }
-    }
-
-    return 0;
+    struct clog_handler* handler = clog_get_stack();
+    return clog_handler_annotation(handler, msg, key, value);
 }
 
 
@@ -174,25 +124,12 @@ _clog_init_message(struct clog_message* msg, enum clog_level level,
 }
 
 void
-clog_annotate_message_field(struct clog_message* msg, const char* key,
-                            const char* value)
-{
-    /* Just like clog_annotate_message, but we always send the annotation
-     * through all registered handlers. */
-    struct clog_handler* handler;
-    for (handler = clog_get_stack(); handler != NULL; handler = handler->next) {
-        clog_handler_annotation(handler, msg, key, value);
-    }
-}
-
-void
 _clog_finish_message(struct clog_message* msg, const char* format, ...)
 {
-    va_list args;
     msg->format = format;
-    va_start(args, format);
-    clog_process_message_(msg, args);
-    va_end(args);
+    va_start(msg->args, format);
+    clog_process_message(msg);
+    va_end(msg->args);
 }
 
 /* Include a linkable (but deprecated) copy of this for any existing code
@@ -204,11 +141,25 @@ _clog_log_channel(enum clog_level level, const char* channel,
     /* Otherwise create a clog_message object and pass it off to all of the
      * handlers. */
     struct clog_message  msg;
-    va_list args;
     msg.level = level;
     msg.channel = channel;
     msg.format = format;
-    va_start(args, format);
-    clog_process_message_(&msg, args);
-    va_end(args);
+    va_start(msg.args, format);
+    clog_process_message(&msg);
+    va_end(msg.args);
 }
+
+
+/*-----------------------------------------------------------------------
+ * Inline declarations
+ */
+
+int
+clog_handler_annotation(struct clog_handler* handler, struct clog_message* msg,
+                        const char* key, const char* value);
+
+int
+clog_handler_message(struct clog_handler* handler, struct clog_message* msg);
+
+void
+clog_handler_free(struct clog_handler* handler);

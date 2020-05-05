@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2014, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -17,13 +17,13 @@ clog_null_handler__annotation(struct clog_handler *self,
                               struct clog_message *msg,
                               const char *key, const char *value)
 {
-    return CLOG_SKIP;
+    return 0;
 }
 
 static int
 clog_null_handler__message(struct clog_handler *self, struct clog_message *msg)
 {
-    return CLOG_SKIP;
+    return 0;
 }
 
 static void
