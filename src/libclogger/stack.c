@@ -92,19 +92,19 @@ clog_get_stack(void)
     }
 }
 
-int
+void
 clog_process_message(struct clog_message* msg)
 {
     struct clog_handler* handler = clog_get_stack();
-    return clog_handler_message(handler, msg);
+    clog_handler_message(handler, msg);
 }
 
-int
+void
 clog_annotate_message(struct clog_message* msg, const char* key,
                       const char* value)
 {
     struct clog_handler* handler = clog_get_stack();
-    return clog_handler_annotation(handler, msg, key, value);
+    clog_handler_annotation(handler, msg, key, value);
 }
 
 
@@ -154,11 +154,11 @@ _clog_log_channel(enum clog_level level, const char* channel,
  * Inline declarations
  */
 
-int
+void
 clog_handler_annotation(struct clog_handler* handler, struct clog_message* msg,
                         const char* key, const char* value);
 
-int
+void
 clog_handler_message(struct clog_handler* handler, struct clog_message* msg);
 
 void

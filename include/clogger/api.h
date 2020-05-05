@@ -45,10 +45,10 @@ struct clog_message {
 
 
 struct clog_handler {
-    int (*annotation)(struct clog_handler* handler, struct clog_message* msg,
-                      const char* key, const char* value);
+    void (*annotation)(struct clog_handler* handler, struct clog_message* msg,
+                       const char* key, const char* value);
 
-    int (*message)(struct clog_handler* handler, struct clog_message* msg);
+    void (*message)(struct clog_handler* handler, struct clog_message* msg);
 
     void (*free)(struct clog_handler* handler);
 
@@ -56,24 +56,22 @@ struct clog_handler {
 };
 
 CORK_INLINE
-int
+void
 clog_handler_annotation(struct clog_handler* handler, struct clog_message* msg,
                         const char* key, const char* value)
 {
-    if (handler == NULL) {
-        return 0;
+    if (handler != NULL) {
+        handler->annotation(handler, msg, key, value);
     }
-    return handler->annotation(handler, msg, key, value);
 }
 
 CORK_INLINE
-int
+void
 clog_handler_message(struct clog_handler* handler, struct clog_message* msg)
 {
-    if (handler == NULL) {
-        return 0;
+    if (handler != NULL) {
+        handler->message(handler, msg);
     }
-    return handler->message(handler, msg);
 }
 
 CORK_INLINE
@@ -97,10 +95,10 @@ int
 clog_handler_pop_thread(struct clog_handler *handler);
 
 
-int
+void
 clog_process_message(struct clog_message* msg);
 
-int
+void
 clog_annotate_message(struct clog_message* msg, const char* key,
                       const char* value);
 

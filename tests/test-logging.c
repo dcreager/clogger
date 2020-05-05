@@ -139,19 +139,19 @@ test_logs(const char *expected)
  * Test annotator
  */
 
-static int
+static void
 annotate__annotation(struct clog_handler *log, struct clog_message *msg,
                      const char *key, const char *value)
 {
-    return clog_handler_annotation(log->next, msg, key, value);
+    clog_handler_annotation(log->next, msg, key, value);
 }
 
-static int
+static void
 annotate__message(struct clog_handler *log, struct clog_message *msg)
 {
-    rii_check(clog_handler_annotation(log->next, msg, "key1", "value1"));
-    rii_check(clog_handler_annotation(log->next, msg, "key2", "value2"));
-    return clog_handler_message(log->next, msg);
+    clog_handler_annotation(log->next, msg, "key1", "value1");
+    clog_handler_annotation(log->next, msg, "key2", "value2");
+    clog_handler_message(log->next, msg);
 }
 
 static void

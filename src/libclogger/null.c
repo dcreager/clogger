@@ -12,18 +12,16 @@
 #include "clogger/api.h"
 #include "clogger/handlers.h"
 
-static int
+static void
 clog_null_handler__annotation(struct clog_handler *self,
                               struct clog_message *msg,
                               const char *key, const char *value)
 {
-    return 0;
 }
 
-static int
+static void
 clog_null_handler__message(struct clog_handler *self, struct clog_message *msg)
 {
-    return 0;
 }
 
 static void

@@ -30,29 +30,27 @@ clog_keep_filter_check_channel(struct clog_keep_filter* filter,
     return cork_hash_table_get(filter->channels, (void *) channel) != NULL;
 }
 
-static int
+static void
 clog_keep_filter__annotation(struct clog_handler* handler,
                              struct clog_message* msg, const char* key,
                              const char* value)
 {
     struct clog_keep_filter* filter =
             cork_container_of(handler, struct clog_keep_filter, parent);
-    if (!clog_keep_filter_check_channel(filter, msg->channel)) {
-        return 0;
+    if (clog_keep_filter_check_channel(filter, msg->channel)) {
+        clog_handler_annotation(handler->next, msg, key, value);
     }
-    return clog_handler_annotation(handler->next, msg, key, value);
 }
 
-static int
+static void
 clog_keep_filter__message(struct clog_handler* handler,
                           struct clog_message* msg)
 {
     struct clog_keep_filter* filter =
             cork_container_of(handler, struct clog_keep_filter, parent);
-    if (!clog_keep_filter_check_channel(filter, msg->channel)) {
-        return 0;
+    if (clog_keep_filter_check_channel(filter, msg->channel)) {
+        clog_handler_message(handler->next, msg);
     }
-    return clog_handler_message(handler->next, msg);
 }
 
 static void

@@ -68,7 +68,7 @@ clog_stream_handler_release(struct clog_stream_handler* self)
  * Stream handler
  */
 
-static int
+static void
 clog_stream_handler__annotation(struct clog_handler* handler,
                                 struct clog_message* msg, const char* key,
                                 const char* value)
@@ -82,10 +82,10 @@ clog_stream_handler__annotation(struct clog_handler* handler,
     }
 
     clog_formatter_annotation(self->fmt, key, value);
-    return clog_handler_annotation(handler->next, msg, key, value);
+    clog_handler_annotation(handler->next, msg, key, value);
 }
 
-static int
+static void
 clog_stream_handler__message(struct clog_handler* handler,
                              struct clog_message* msg)
 {
@@ -99,12 +99,11 @@ clog_stream_handler__message(struct clog_handler* handler,
 
     clog_formatter_finish(self->fmt, msg, &self->buf);
     cork_buffer_append(&self->buf, "\n", 1);
-    rii_check(cork_stream_consumer_data
-              (self->consumer, self->buf.buf, self->buf.size,
-               self->first_chunk));
+    cork_stream_consumer_data(self->consumer, self->buf.buf, self->buf.size,
+                              self->first_chunk);
     self->first_chunk = false;
     clog_stream_handler_release(self);
-    return clog_handler_message(handler->next, msg);
+    clog_handler_message(handler->next, msg);
 }
 
 static void
