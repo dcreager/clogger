@@ -46,6 +46,8 @@ main(int argc, const char** argv)
         cloge_debug ("Interesting things are%s happening",
                      ((i % 2) == 0) ? "" : " not") {
             clf(field1, string, "value");
+            clf(field2, string, "another value");
+            clf(field3, string, "yet another value");
         }
     }
     printf("ok 1\n");
