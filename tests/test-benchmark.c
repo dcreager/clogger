@@ -40,6 +40,7 @@ main(int argc, const char** argv)
     clog_handler_push_process(handler);
     clog_set_minimum_level(CLOG_LEVEL_DEBUG);
 
+    printf("1..1\n");
     printf("==== Generating %zu log messages\n", iteration_count);
     for (size_t i = 0; i < iteration_count; i++) {
         cloge_debug ("Interesting things are%s happening",
@@ -47,6 +48,7 @@ main(int argc, const char** argv)
             clf(field1, string, "value");
         }
     }
+    printf("ok 1\n");
 
     return EXIT_SUCCESS;
 }

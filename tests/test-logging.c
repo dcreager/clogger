@@ -358,8 +358,11 @@ main(int argc, const char **argv)
     Suite  *suite = test_suite();
     SRunner  *runner = srunner_create(suite);
 
+
     setup_allocator();
-    srunner_run_all(runner, CK_NORMAL);
+    /* Use TAP for our stderr output instead of libcheck's default. */
+    srunner_set_tap(runner, "-");
+    srunner_run_all(runner, CK_SILENT);
     number_failed = srunner_ntests_failed(runner);
     srunner_free(runner);
 

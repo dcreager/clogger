@@ -1,14 +1,48 @@
-/build/
-/.build/
+# autotools stuff
+/aclocal.m4
+/autom4te.cache/
+/build-aux/compile
+/build-aux/config.guess
+/build-aux/config.sub
+/build-aux/depcomp
+/build-aux/install-sh
+/build-aux/ltmain.sh
+/build-aux/missing
+/build-aux/test-driver
+/config.h.in
+/configure
+/Makefile.in
+/m4/libtool.m4
+/m4/lt*.m4
 
-clogger.pc
+# Dist tarballs
+clogger-*.tar.xz
 
-/clogger*.tar.gz
-/clogger*.tar.bz2
+# In-source build artefacts
+*.a
+*.o
+*.la
+*.lo
+.deps
+.dirstamp
+.libs/
+/config.h
+/config.log
+/config.status
+/libtool
+/Makefile
+/stamp-h1
+test*.log
+test*.trs
+/tests/test-*
+!/tests/test-*.h
+!/tests/test-*.c
 
-*.[oa]
-*.os
-*.so
-*.dylib
-
-!.travis.yml
+# Common out-of-source build locations
+/.build*
+/build*
+/build*
+# but not the directory defining builds.sr.ht CI suites
+!/.builds/
+# or the build-aux directory
+!/build-aux/

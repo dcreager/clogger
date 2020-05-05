@@ -16,6 +16,22 @@ else
     ROOT=$(dirname $PWD)
 fi
 
+if [ "$1" = "--build" ]; then
+    shift
+    BUILD="$1"
+    shift
+else
+    BUILD=$PWD
+fi
+
+if [ "$1" = "--cram" ]; then
+    shift
+    CRAM="$1"
+    shift
+else
+    CRAM="$ROOT/tests/cram.py"
+fi
+
 if [ "$1" = "--tests" ]; then
     shift
     TESTS="$1"
@@ -26,6 +42,4 @@ fi
 
 export ROOT
 
-LD_LIBRARY_PATH="$PWD/src:$LD_LIBRARY_PATH" \
-PATH="$PWD/src:$PATH" \
-  "$PYTHON" "$ROOT/tests/cram.py" "$@" "$TESTS"
+PATH="$BUILD:$PATH" exec "$PYTHON" "$CRAM" "$@" "$TESTS"
