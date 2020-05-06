@@ -74,9 +74,11 @@ libclogger_version_info = 3:0:0
 lib_LTLIBRARIES += libclogger.la
 pkgconfig_DATA += src/clogger.pc
 
+include_HEADERS = \
+    include/clogger.h
+
 cloggerincludedir = $(includedir)/clogger
 cloggerinclude_HEADERS = \
-    include/clogger.h \
     include/clogger/api.h \
     include/clogger/error.h \
     include/clogger/fields.h \
@@ -86,8 +88,8 @@ cloggerinclude_HEADERS = \
     include/clogger/stash.h
 
 libclogger_la_SOURCES = \
+    $(include_HEADERS) \
     $(cloggerinclude_HEADERS) \
-    $(helpersinclude_HEADERS) \
     src/libclogger/fields.c \
     src/libclogger/filter.c \
     src/libclogger/formatter.c \
