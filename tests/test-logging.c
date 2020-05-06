@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2014, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -20,7 +20,6 @@
 #include "clogger/api.h"
 #include "clogger/fields.h"
 #include "clogger/handlers.h"
-#include "clogger/helpers/fields.h"
 
 #include "helpers.h"
 
@@ -51,23 +50,29 @@ generate_messages(void)
     /* Because there are an even number of calls to bump_counter, the results
      * will be consistent: Critical, Warning, and Info will get true; Error,
      * Notice, and Debug will get false. */
-    cloge_critical ("Critical %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_critical {
+        clog_add_field(field1, printf, "%s%s", "he", "llo");
+        clog_set_message("Critical %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_error ("Error %s", bump_counter() ? "noooooo" : "event") {
-        clf(field1, string, "hello");
+    cloge_error {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Error %s", bump_counter() ? "noooooo" : "event");
     }
-    cloge_warning ("Warning %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_warning {
+        clog_add_field(field1, printf, "%s%s", "he", "llo");
+        clog_set_message("Warning %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_notice ("Notice %s", bump_counter() ? "noooooo":"event") {
-        clf(field1, string, "hello");
+    cloge_notice {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Notice %s", bump_counter() ? "noooooo" : "event");
     }
-    cloge_info ("Info %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_info {
+        clog_add_field(field1, printf, "%s%s", "he", "llo");
+        clog_set_message("Info %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_debug ("Debug %s", bump_counter() ? "noooooo" : "event") {
-        clf(field1, string, "hello");
+    cloge_debug {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Debug %s", bump_counter() ? "noooooo" : "event");
     }
 }
 
@@ -139,31 +144,29 @@ test_logs(const char *expected)
  * Test annotator
  */
 
-static int
-annotate__annotation(struct clog_handler *log, struct clog_message *msg,
-                     const char *key, const char *value)
+static void
+annotate_handle(struct clog_handler *log, struct clog_message* message)
 {
-    return 0;
-}
-
-static int
-annotate__message(struct clog_handler *log, struct clog_message *msg)
-{
-    rii_check(clog_annotate_message(log, msg, "key1", "value1"));
-    rii_check(clog_annotate_message(log, msg, "key2", "value2"));
-    return 0;
+    if (log->next != NULL) {
+        struct clog_string_field key1;
+        struct clog_string_field key2;
+        clog_message_add_string_field(message, &key1, "key1", "value1");
+        clog_message_add_string_field(message, &key2, "key2", "value2");
+        clog_handler_handle(log->next, message);
+        clog_message_pop_field(message, &key2.parent);
+        clog_message_pop_field(message, &key1.parent);
+    }
 }
 
 static void
-annotate__free(struct clog_handler *log)
+annotate_free(struct clog_handler *log)
 {
     /* Nothing to do */
 }
 
 struct clog_handler  annotate = {
-    annotate__annotation,
-    annotate__message,
-    annotate__free,
+    annotate_handle,
+    annotate_free,
     NULL
 };
 

@@ -34,6 +34,7 @@ ForEachMacros:
   - cloge_info
   - cloge_notice
   - cloge_warning
+  - cork_dllist_foreach
 IncludeCategories:
   - Regex:    '^<.*\.h>'
     Priority: 1

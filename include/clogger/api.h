@@ -1,6 +1,6 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012-2013, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
  * Please see the COPYING file in this distribution for license details.
@@ -10,11 +10,17 @@
 #ifndef CLOGGER_API_H
 #define CLOGGER_API_H
 
+#include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
 
 #include <libcork/core.h>
+#include <libcork/ds.h>
 
+
+/*-----------------------------------------------------------------------
+ * Log levels
+ */
 
 enum clog_level {
     CLOG_LEVEL_NONE = 0,
@@ -35,42 +41,102 @@ CORK_ATTR_PURE
 const char *
 clog_level_name_fixed_width(enum clog_level level);
 
+extern enum clog_level  clog_minimum_level;
+
+void
+clog_set_minimum_level(enum clog_level level);
+
+
+/*-----------------------------------------------------------------------
+ * Handler interface
+ */
+
+struct clog_message_field {
+    const char* key;
+    const char* value;
+    void (*done)(struct clog_message_field* field);
+    struct cork_dllist_item item;
+};
+
+CORK_INLINE
+void
+clog_message_field_done(struct clog_message_field* field)
+{
+    if (field->done != NULL) {
+        field->done(field);
+    }
+}
 
 struct clog_message {
-    enum clog_level  level;
-    const char  *channel;
-    const char  *format;
-    va_list  args;
+    enum clog_level level;
+    const char* channel;
+    struct cork_dllist fields;
+    struct cork_buffer message;
+    const char* fmt;
+    va_list args;
 };
 
+CORK_INLINE
+void
+clog_message_init(struct clog_message* message, enum clog_level level,
+                  const char* channel)
+{
+    message->level = level;
+    message->channel = channel;
+    cork_dllist_init(&message->fields);
+    cork_buffer_init(&message->message);
+}
 
-#define CLOG_CONTINUE  0
-#define CLOG_FAILURE  -1
-#define CLOG_SKIP     -2
+CORK_INLINE
+void
+clog_message_pop_field(struct clog_message* message,
+                       struct clog_message_field* field)
+{
+    cork_dllist_remove(&field->item);
+    clog_message_field_done(field);
+}
+
+CORK_INLINE
+void
+clog_message_done(struct clog_message* message)
+{
+    struct cork_dllist_item *curr;
+    struct cork_dllist_item *next;
+    struct clog_message_field* field;
+    cork_dllist_foreach (&message->fields, curr, next,
+                         struct clog_message_field, field, item) {
+        clog_message_pop_field(message, field);
+    }
+    cork_buffer_done(&message->message);
+}
+
+const char*
+clog_message_message(struct clog_message* message);
 
 struct clog_handler {
-    int
-    (*annotation)(struct clog_handler *handler, struct clog_message *msg,
-                  const char *key, const char *value);
-
-    int
-    (*message)(struct clog_handler *handler, struct clog_message *msg);
-
-    void
-    (*free)(struct clog_handler *handler);
-
-    struct clog_handler  *next;
+    void (*handle)(struct clog_handler* handler, struct clog_message* message);
+    void (*free)(struct clog_handler* handler);
+    struct clog_handler* next;
 };
 
-#define clog_handler_annotation(handler, msg, key, value) \
-    ((handler)->annotation((handler), (msg), (key), (value)))
+CORK_INLINE
+void
+clog_handler_handle(struct clog_handler* handler, struct clog_message* message)
+{
+    handler->handle(handler, message);
+}
 
-#define clog_handler_message(handler, msg) \
-    ((handler)->message((handler), (msg)))
+CORK_INLINE
+void
+clog_handler_free(struct clog_handler* handler)
+{
+    handler->free(handler);
+}
 
-#define clog_handler_free(handler) \
-    ((handler)->free((handler)))
 
+/*-----------------------------------------------------------------------
+ * Handler stacks
+ */
 
 void
 clog_handler_push_process(struct clog_handler *handler);
@@ -85,27 +151,12 @@ int
 clog_handler_pop_thread(struct clog_handler *handler);
 
 
-int
-clog_process_message(struct clog_message *msg);
-
-int
-clog_annotate_message(struct clog_handler *handler, struct clog_message *msg,
-                      const char *key, const char *value);
-
-void
-clog_annotate_message_field(struct clog_message* msg, const char* key,
-                            const char* value);
-
-void
-_clog_init_message(struct clog_message* msg, enum clog_level level,
-                   const char* channel);
-
-void
-_clog_finish_message(struct clog_message* msg, const char* format, ...)
-        CORK_ATTR_PRINTF(2, 3);
+/*-----------------------------------------------------------------------
+ * Processing messages
+ */
 
 #define clog_log_channel(level, channel, ...)                                  \
-    clog_event_channel((level), (channel), __VA_ARGS__) {}
+    clog_event_channel((level), (channel)) { clog_set_message(__VA_ARGS__); }
 
 #define clog_log(level, ...) \
     clog_log_channel((level), CLOG_CHANNEL, __VA_ARGS__)
@@ -151,37 +202,41 @@ _clog_finish_message(struct clog_message* msg, const char* format, ...)
  *
  * [1] https://stackoverflow.com/questions/866012/is-there-a-way-to-define-variables-of-two-different-types-in-a-for-loop-initiali */
 /* clang-format off */
-#define clog_event_channel(level, channel, ...)                                \
+#define clog_event_channel(level, channel)                                     \
     for (bool __continue = true; __continue; )                                 \
     for (enum clog_level __level = (level); __continue; )                      \
     for (__continue = (__level <= clog_minimum_level); __continue; )           \
     for (const char* __channel = (channel); __continue; )                      \
-    for (struct clog_message __msg; __continue; )                              \
-    for (_clog_init_message(&__msg, __level, __channel); __continue; )         \
+    for (struct clog_message __message; __continue; )                          \
+    for (clog_message_init(&__message, __level, __channel); __continue; )      \
     for (int __i = 0; __i < 2; __i++)                                          \
     if (__i == 1) {                                                            \
-        _clog_finish_message(&__msg, __VA_ARGS__);                             \
         __continue = false;                                                    \
     } else
 /* clang-format on */
 
-#define clog_pending_event() (&__msg)
+#define clog_add_field(field_name, field_type, ...)                            \
+    struct clog_##field_type##_field __##field_name##_field;                   \
+    clog_message_add_##field_type##_field(&__message, &__##field_name##_field, \
+                                          #field_name, __VA_ARGS__);
 
-#define clog_event(level, ...)                                                 \
-    clog_event_channel((level), CLOG_CHANNEL, __VA_ARGS__)
+#define clog_set_message(...)                                                  \
+    do {                                                                       \
+        _clog_process_message(&__message, __VA_ARGS__);                        \
+    } while (0)
 
-#define cloge_critical(...) clog_event(CLOG_LEVEL_CRITICAL, __VA_ARGS__)
-#define cloge_error(...) clog_event(CLOG_LEVEL_ERROR, __VA_ARGS__)
-#define cloge_warning(...) clog_event(CLOG_LEVEL_WARNING, __VA_ARGS__)
-#define cloge_notice(...) clog_event(CLOG_LEVEL_NOTICE, __VA_ARGS__)
-#define cloge_info(...) clog_event(CLOG_LEVEL_INFO, __VA_ARGS__)
-#define cloge_debug(...) clog_event(CLOG_LEVEL_DEBUG, __VA_ARGS__)
-#define cloge_trace(...) clog_event(CLOG_LEVEL_TRACE, __VA_ARGS__)
-
-extern enum clog_level  clog_minimum_level;
+#define clog_event(level) clog_event_channel((level), CLOG_CHANNEL)
+#define cloge_critical clog_event(CLOG_LEVEL_CRITICAL)
+#define cloge_error clog_event(CLOG_LEVEL_ERROR)
+#define cloge_warning clog_event(CLOG_LEVEL_WARNING)
+#define cloge_notice clog_event(CLOG_LEVEL_NOTICE)
+#define cloge_info clog_event(CLOG_LEVEL_INFO)
+#define cloge_debug clog_event(CLOG_LEVEL_DEBUG)
+#define cloge_trace clog_event(CLOG_LEVEL_TRACE)
 
 void
-clog_set_minimum_level(enum clog_level level);
+_clog_process_message(struct clog_message* message, const char* fmt, ...)
+        CORK_ATTR_PRINTF(2, 3);
 
 
 #endif /* CLOGGER_API_H */

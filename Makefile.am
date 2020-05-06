@@ -59,10 +59,6 @@ cloggerinclude_HEADERS = \
     include/clogger/logging.h \
     include/clogger/stash.h
 
-helpersincludedir = $(includedir)/clogger/helpers
-helpersinclude_HEADERS = \
-    include/clogger/helpers/fields.h
-
 libclogger_la_SOURCES = \
     $(cloggerinclude_HEADERS) \
     $(helpersinclude_HEADERS) \

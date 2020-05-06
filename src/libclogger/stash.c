@@ -70,6 +70,23 @@ clog_stashed_event_matches(const struct clog_stashed_event* event, va_list args)
 }
 
 static void
+clog_stashed_event_add(struct clog_stashed_event* event, const char* key,
+                       const char* value)
+{
+    const char* key_copy = cork_strdup(key);
+    const char* value_copy = cork_strdup(value);
+    bool is_new;
+    void* old_key;
+    void* old_value;
+    cork_hash_table_put(event->fields, (void*) key_copy, (void*) value_copy,
+                        &is_new, &old_key, &old_value);
+    if (!is_new) {
+        cork_strfree((const char*) old_key);
+        cork_strfree((const char*) old_value);
+    }
+}
+
+static void
 clog_stashed_event_free_callback(void* ud, void* vevent)
 {
     struct clog_stashed_event** event = vevent;
@@ -116,52 +133,27 @@ clog_stash_contains_event(const struct clog_stash* stash, ...)
 struct clog_stashing_handler {
     struct clog_handler parent;
     struct clog_stash* stash;
-    struct clog_stashed_event* pending_event;
-    struct cork_buffer buf;
 };
 
 static void
-clog_stashing_handler_ensure_pending_event(struct clog_stashing_handler* self)
-{
-    if (self->pending_event == NULL) {
-        self->pending_event = clog_stashed_event_new();
-    }
-}
-
-static int
-clog_stashing_handler_annotation(struct clog_handler* vself,
-                                 struct clog_message* msg, const char* key,
-                                 const char* value)
+clog_stashing_handler_handle(struct clog_handler* handler,
+                             struct clog_message* message)
 {
     struct clog_stashing_handler* self =
-            cork_container_of(vself, struct clog_stashing_handler, parent);
-    clog_stashing_handler_ensure_pending_event(self);
-    const char* key_copy = cork_strdup(key);
-    const char* value_copy = cork_strdup(value);
-    bool is_new;
-    void* old_key;
-    void* old_value;
-    cork_hash_table_put(self->pending_event->fields, (void*) key_copy,
-                        (void*) value_copy, &is_new, &old_key, &old_value);
-    if (!is_new) {
-        cork_strfree((const char*) old_key);
-        cork_strfree((const char*) old_value);
+            cork_container_of(handler, struct clog_stashing_handler, parent);
+    struct clog_stashed_event* event = clog_stashed_event_new();
+    struct cork_dllist_item *curr;
+    struct cork_dllist_item *next;
+    struct clog_message_field* field;
+    cork_dllist_foreach (&message->fields, curr, next,
+                         struct clog_message_field, field, item) {
+        clog_stashed_event_add(event, field->key, field->value);
     }
-    return 0;
-}
-
-static int
-clog_stashing_handler_message(struct clog_handler* vself,
-                              struct clog_message* msg)
-{
-    struct clog_stashing_handler* self =
-            cork_container_of(vself, struct clog_stashing_handler, parent);
-    cork_buffer_vprintf(&self->buf, msg->format, msg->args);
-    rii_check(clog_stashing_handler_annotation(vself, msg, "__message",
-                                               self->buf.buf));
-    cork_array_append(&self->stash->events, self->pending_event);
-    self->pending_event = NULL;
-    return 0;
+    clog_stashed_event_add(event, "__message", clog_message_message(message));
+    cork_array_append(&self->stash->events, event);
+    if (handler->next != NULL) {
+        clog_handler_handle(handler->next, message);
+    }
 }
 
 static void
@@ -169,10 +161,6 @@ clog_stashing_handler_free(struct clog_handler *vself)
 {
     struct clog_stashing_handler* self =
             cork_container_of(vself, struct clog_stashing_handler, parent);
-    if (self->pending_event != NULL) {
-        clog_stashed_event_free(self->pending_event);
-    }
-    cork_buffer_done(&self->buf);
     cork_delete(struct clog_stashing_handler, self);
 }
 
@@ -181,11 +169,8 @@ clog_stashing_handler_new(struct clog_stash* stash)
 {
     struct clog_stashing_handler* self =
             cork_new(struct clog_stashing_handler);
-    self->parent.annotation = clog_stashing_handler_annotation;
-    self->parent.message = clog_stashing_handler_message;
+    self->parent.handle = clog_stashing_handler_handle;
     self->parent.free = clog_stashing_handler_free;
     self->stash = stash;
-    self->pending_event = NULL;
-    cork_buffer_init(&self->buf);
     return &self->parent;
 }

@@ -1,10 +1,9 @@
 /* -*- coding: utf-8 -*-
  * ----------------------------------------------------------------------
- * Copyright © 2012, RedJack, LLC.
+ * Copyright © 2012-2020, clogger authors.
  * All rights reserved.
  *
- * Please see the COPYING file in this distribution for license
- * details.
+ * Please see the COPYING file in this distribution for license details.
  * ----------------------------------------------------------------------
  */
 
@@ -12,22 +11,22 @@
 
 #include <libcork/core.h>
 #include <libcork/ds.h>
-#include <libcork/threads.h>
 #include <libcork/helpers/errors.h>
+#include <libcork/threads.h>
 
 #include "clogger/api.h"
 #include "clogger/error.h"
 
 
-enum clog_level  clog_minimum_level = CLOG_LEVEL_WARNING;
+enum clog_level clog_minimum_level = CLOG_LEVEL_WARNING;
 
 static bool can_push_process_handlers = true;
-static struct clog_handler  *process_stack = NULL;
-cork_tls(struct clog_handler *, thread_stack);
+static struct clog_handler* process_stack = NULL;
+cork_tls(struct clog_handler*, thread_stack);
 
 
 void
-clog_handler_push_process(struct clog_handler *handler)
+clog_handler_push_process(struct clog_handler* handler)
 {
     assert(can_push_process_handlers);
     handler->next = process_stack;
@@ -35,132 +34,85 @@ clog_handler_push_process(struct clog_handler *handler)
 }
 
 int
-clog_handler_pop_process(struct clog_handler *handler)
+clog_handler_pop_process(struct clog_handler* handler)
 {
-    if (CORK_LIKELY(process_stack == handler)) {
-        process_stack = handler->next;
-        handler->next = NULL;
-        return 0;
-    } else {
+    struct clog_handler** thread_stack = thread_stack_get();
+    assert(*thread_stack == NULL);
+    if (CORK_UNLIKELY(process_stack != handler)) {
         clog_bad_stack("Unexpected handler when popping from process stack");
         return -1;
     }
+
+    process_stack = handler->next;
+    handler->next = NULL;
+    return 0;
 }
 
 void
-clog_handler_push_thread(struct clog_handler *handler)
+clog_handler_push_thread(struct clog_handler* handler)
 {
-    struct clog_handler  **thread_stack = thread_stack_get();
-    handler->next = *thread_stack;
-    *thread_stack = handler;
+    struct clog_handler** thread_stack = thread_stack_get();
     can_push_process_handlers = false;
+    if (*thread_stack == NULL) {
+        handler->next = process_stack;
+    } else {
+        handler->next = *thread_stack;
+    }
+    *thread_stack = handler;
 }
 
 int
-clog_handler_pop_thread(struct clog_handler *handler)
+clog_handler_pop_thread(struct clog_handler* handler)
 {
-    struct clog_handler  **thread_stack = thread_stack_get();
-
-    if (CORK_LIKELY(*thread_stack == handler)) {
-        *thread_stack = handler->next;
-        handler->next = NULL;
-        return 0;
-    } else {
+    struct clog_handler** thread_stack = thread_stack_get();
+    if (CORK_UNLIKELY(*thread_stack != handler)) {
         clog_bad_stack("Unexpected handler when popping from thread stack");
         return -1;
     }
-}
 
-
-static int
-clog_process_message_(struct clog_message *msg, va_list args)
-{
-    /* First send the message through the handlers in the thread stack, and
-     * then the handlers in the process stack.  If any of them return
-     * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
-
-    int  rc;
-    struct clog_handler  **thread_stack = thread_stack_get();
-    struct clog_handler  *handler;
-
-    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
-        va_copy(msg->args, args);
-        rc = clog_handler_message(handler, msg);
-        va_end(msg->args);
-        ei_check(rc);
-    }
-
-    for (handler = process_stack; handler != NULL; handler = handler->next) {
-        va_copy(msg->args, args);
-        rc = clog_handler_message(handler, msg);
-        va_end(msg->args);
-        ei_check(rc);
-    }
-
-    return 0;
-
-error:
-    if (rc == CLOG_SKIP) {
+    if (handler->next == process_stack) {
+        *thread_stack = NULL;
+        handler->next = NULL;
         return 0;
-    } else {
-        return rc;
-    }
-}
-
-int
-clog_process_message(struct clog_message *msg)
-{
-    va_list args;
-    va_copy(args, msg->args);
-    int rc = clog_process_message_(msg, args);
-    va_end(args);
-    return rc;
-}
-
-int
-clog_annotate_message(struct clog_handler *self, struct clog_message *msg,
-                      const char *key, const char *value)
-{
-    /* First send the annotation through the handlers in the thread stack, and
-     * then the handlers in the process stack.  If any of them return
-     * CLOG_SKIP_MESSAGE, immediately abort the processing of the message. */
-
-    int  rc;
-    struct clog_handler  **thread_stack = thread_stack_get();
-    struct clog_handler  *handler;
-    bool  found_handler = false;
-
-    /* We're not supposed to send the annotation to any handlers "above" the
-     * current one in the stack. */
-
-    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
-        if (self == handler) {
-            found_handler = true;
-        }
-
-        if (found_handler) {
-            ei_check(rc = clog_handler_annotation(handler, msg, key, value));
-        }
     }
 
-    for (handler = process_stack; handler != NULL; handler = handler->next) {
-        if (self == handler) {
-            found_handler = true;
-        }
-
-        if (found_handler) {
-            ei_check(rc = clog_handler_annotation(handler, msg, key, value));
-        }
-    }
-
+    *thread_stack = handler->next;
+    handler->next = NULL;
     return 0;
+}
 
-error:
-    if (rc == CLOG_SKIP) {
-        return 0;
+static struct clog_handler*
+clog_get_stack(void)
+{
+    struct clog_handler** thread_stack = thread_stack_get();
+    if (*thread_stack == NULL) {
+        return process_stack;
     } else {
-        return rc;
+        return *thread_stack;
     }
+}
+
+const char*
+clog_message_message(struct clog_message* message)
+{
+    if (message->message.buf == NULL) {
+        cork_buffer_vprintf(&message->message, message->fmt, message->args);
+    }
+    return message->message.buf;
+}
+
+void
+_clog_process_message(struct clog_message* message, const char* fmt, ...)
+{
+    struct clog_handler* handler = clog_get_stack();
+    if (handler == NULL) {
+        return;
+    }
+    message->fmt = fmt;
+    va_start(message->args, fmt);
+    handler->handle(handler, message);
+    va_end(message->args);
+    clog_message_done(message);
 }
 
 
@@ -170,67 +122,27 @@ clog_set_minimum_level(enum clog_level level)
     clog_minimum_level = level;
 }
 
-void
-_clog_init_message(struct clog_message* msg, enum clog_level level,
-                   const char* channel)
-{
-    msg->level = level;
-    msg->channel = channel;
-    msg->format = NULL;
-}
+
+/*-----------------------------------------------------------------------
+ * Inline declarations
+ */
 
 void
-clog_annotate_message_field(struct clog_message* msg, const char* key,
-                            const char* value)
-{
-    /* Just like clog_annotate_message_field, but we always send the annotation
-     * through all registered handlers. */
-
-    int rc;
-    struct clog_handler** thread_stack = thread_stack_get();
-    struct clog_handler* handler;
-
-    /* We're not supposed to send the annotation to any handlers "above" the
-     * current one in the stack. */
-
-    for (handler = *thread_stack; handler != NULL; handler = handler->next) {
-        ei_check(rc = clog_handler_annotation(handler, msg, key, value));
-    }
-
-    for (handler = process_stack; handler != NULL; handler = handler->next) {
-        ei_check(rc = clog_handler_annotation(handler, msg, key, value));
-    }
-
-    return;
-
-error:
-    return;
-}
+clog_message_field_done(struct clog_message_field* field);
 
 void
-_clog_finish_message(struct clog_message* msg, const char* format, ...)
-{
-    va_list args;
-    msg->format = format;
-    va_start(args, format);
-    clog_process_message_(msg, args);
-    va_end(args);
-}
+clog_message_init(struct clog_message* message, enum clog_level level,
+                  const char* channel);
 
-/* Include a linkable (but deprecated) copy of this for any existing code
- * compiled against ≤ v1.0. */
 void
-_clog_log_channel(enum clog_level level, const char* channel,
-                  const char* format, ...)
-{
-    /* Otherwise create a clog_message object and pass it off to all of the
-     * handlers. */
-    struct clog_message  msg;
-    va_list args;
-    msg.level = level;
-    msg.channel = channel;
-    msg.format = format;
-    va_start(args, format);
-    clog_process_message_(&msg, args);
-    va_end(args);
-}
+clog_message_pop_field(struct clog_message* message,
+                       struct clog_message_field* field);
+
+void
+clog_message_done(struct clog_message* message);
+
+void
+clog_handler_handle(struct clog_handler* handler, struct clog_message* message);
+
+void
+clog_handler_free(struct clog_handler* handler);

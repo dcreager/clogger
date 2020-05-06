@@ -10,11 +10,14 @@
 #ifndef CLOGGER_HANDLERS_H
 #define CLOGGER_HANDLERS_H
 
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include <libcork/core.h>
 #include <libcork/ds.h>
 
+struct clog_handler;
 
 /*-----------------------------------------------------------------------
  * Null handler
