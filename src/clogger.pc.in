@@ -1,14 +1,14 @@
 prefix=@prefix@
-exec_prefix=${prefix}
-libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
-includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
-sharedir=${prefix}/share
-sphinxdir=${sharedir}/doc/clogger/html
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+docdir=@docdir@
+includedir=@includedir@
+libdir=@libdir@
 
 Name: clogger
 Description: Logging library
 Version: @VERSION@
-URL: https://github.com/redjack/clogger/
+URL: https://github.com/dcreager/clogger/
 Libs: -L${libdir} -lclogger
 Cflags: -I${includedir}
 Requires: libcork >= 0.14.0
