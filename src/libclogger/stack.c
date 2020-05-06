@@ -92,19 +92,27 @@ clog_get_stack(void)
     }
 }
 
-void
-clog_process_message(struct clog_message* msg)
+const char*
+clog_message_message(struct clog_message* message)
 {
-    struct clog_handler* handler = clog_get_stack();
-    clog_handler_message(handler, msg);
+    if (message->message.buf == NULL) {
+        cork_buffer_vprintf(&message->message, message->fmt, message->args);
+    }
+    return message->message.buf;
 }
 
 void
-clog_annotate_message(struct clog_message* msg, const char* key,
-                      const char* value)
+_clog_process_message(struct clog_message* message, const char* fmt, ...)
 {
     struct clog_handler* handler = clog_get_stack();
-    clog_handler_annotation(handler, msg, key, value);
+    if (handler == NULL) {
+        return;
+    }
+    message->fmt = fmt;
+    va_start(message->args, fmt);
+    handler->handle(handler, message);
+    va_end(message->args);
+    clog_message_done(message);
 }
 
 
@@ -114,52 +122,27 @@ clog_set_minimum_level(enum clog_level level)
     clog_minimum_level = level;
 }
 
-void
-_clog_init_message(struct clog_message* msg, enum clog_level level,
-                   const char* channel)
-{
-    msg->level = level;
-    msg->channel = channel;
-    msg->format = NULL;
-}
-
-void
-_clog_finish_message(struct clog_message* msg, const char* format, ...)
-{
-    msg->format = format;
-    va_start(msg->args, format);
-    clog_process_message(msg);
-    va_end(msg->args);
-}
-
-/* Include a linkable (but deprecated) copy of this for any existing code
- * compiled against ≤ v1.0. */
-void
-_clog_log_channel(enum clog_level level, const char* channel,
-                  const char* format, ...)
-{
-    /* Otherwise create a clog_message object and pass it off to all of the
-     * handlers. */
-    struct clog_message  msg;
-    msg.level = level;
-    msg.channel = channel;
-    msg.format = format;
-    va_start(msg.args, format);
-    clog_process_message(&msg);
-    va_end(msg.args);
-}
-
 
 /*-----------------------------------------------------------------------
  * Inline declarations
  */
 
 void
-clog_handler_annotation(struct clog_handler* handler, struct clog_message* msg,
-                        const char* key, const char* value);
+clog_message_field_done(struct clog_message_field* field);
 
 void
-clog_handler_message(struct clog_handler* handler, struct clog_message* msg);
+clog_message_init(struct clog_message* message, enum clog_level level,
+                  const char* channel);
+
+void
+clog_message_pop_field(struct clog_message* message,
+                       struct clog_message_field* field);
+
+void
+clog_message_done(struct clog_message* message);
+
+void
+clog_handler_handle(struct clog_handler* handler, struct clog_message* message);
 
 void
 clog_handler_free(struct clog_handler* handler);

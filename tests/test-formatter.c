@@ -18,6 +18,8 @@
 #include <libcork/ds.h>
 #include <libcork/helpers/errors.h>
 
+#include "clogger/api.h"
+#include "clogger/fields.h"
 #include "clogger/formatter.h"
 
 #include "helpers.h"
@@ -74,12 +76,19 @@ static void
 test_message(struct clog_formatter *self, struct cork_buffer *dest,
              enum clog_level level, const char *channel, const char *fmt, ...)
 {
-    struct clog_message  msg;
-    msg.level = level;
-    msg.channel = channel;
-    msg.format = fmt;
-    va_start(msg.args, fmt);
-    clog_formatter_finish(self, &msg, dest);
+    va_list args;
+    va_start(args, fmt);
+    struct clog_message message;
+    struct clog_string_field var1;
+    struct clog_string_field var2;
+    clog_message_init(&message, level, channel);
+    clog_message_add_string_field(&message, &var1, "var1", "value1");
+    clog_message_add_string_field(&message, &var2, "var2", "value2");
+    message.fmt = fmt;
+    va_start(message.args, fmt);
+    clog_formatter_format_message(self, dest, &message);
+    va_end(message.args);
+    clog_message_done(&message);
 }
 
 START_TEST(test_format_01)
@@ -105,9 +114,6 @@ START_TEST(test_format_01)
         "world value1 ";
 
     fail_if_error(fmt = clog_formatter_new(fmt_str));
-    fail_if_error(clog_formatter_start(fmt));
-    fail_if_error(clog_formatter_annotation(fmt, "var1", "value1"));
-    fail_if_error(clog_formatter_annotation(fmt, "var2", "value2"));
     test_message(fmt, &dest, CLOG_LEVEL_INFO, "test", "This is only a test.");
 
     ck_assert_str_eq((char *) dest.buf, expected);

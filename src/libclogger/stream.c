@@ -69,45 +69,27 @@ clog_stream_handler_release(struct clog_stream_handler* self)
  */
 
 static void
-clog_stream_handler__annotation(struct clog_handler* handler,
-                                struct clog_message* msg, const char* key,
-                                const char* value)
+clog_stream_handler_handle(struct clog_handler* handler,
+                           struct clog_message* message)
 {
     struct clog_stream_handler* self =
             cork_container_of(handler, struct clog_stream_handler, parent);
 
-    if (clog_stream_handler_claim(self)) {
-        /* Just claimed the lock; clear the buffer */
-        clog_formatter_start(self->fmt);
-    }
-
-    clog_formatter_annotation(self->fmt, key, value);
-    clog_handler_annotation(handler->next, msg, key, value);
-}
-
-static void
-clog_stream_handler__message(struct clog_handler* handler,
-                             struct clog_message* msg)
-{
-    struct clog_stream_handler* self =
-            cork_container_of(handler, struct clog_stream_handler, parent);
-
-    if (clog_stream_handler_claim(self)) {
-        /* Just claimed the lock; clear the buffer */
-        clog_formatter_start(self->fmt);
-    }
-
-    clog_formatter_finish(self->fmt, msg, &self->buf);
+    clog_stream_handler_claim(self);
+    clog_formatter_format_message(self->fmt, &self->buf, message);
     cork_buffer_append(&self->buf, "\n", 1);
     cork_stream_consumer_data(self->consumer, self->buf.buf, self->buf.size,
                               self->first_chunk);
     self->first_chunk = false;
     clog_stream_handler_release(self);
-    clog_handler_message(handler->next, msg);
+
+    if (handler->next != NULL) {
+        clog_handler_handle(handler->next, message);
+    }
 }
 
 static void
-clog_stream_handler__free(struct clog_handler* vself);
+clog_stream_handler_free(struct clog_handler* vself);
 
 
 /*-----------------------------------------------------------------------
@@ -121,8 +103,8 @@ struct stream_consumer {
 };
 
 static int
-stream_consumer__data(struct cork_stream_consumer* vself, const void* buf,
-                      size_t size, bool is_first)
+stream_consumer_data(struct cork_stream_consumer* vself, const void* buf,
+                     size_t size, bool is_first)
 {
     struct stream_consumer* self =
             cork_container_of(vself, struct stream_consumer, parent);
@@ -138,13 +120,13 @@ stream_consumer__data(struct cork_stream_consumer* vself, const void* buf,
 }
 
 static int
-stream_consumer__eof(struct cork_stream_consumer* vself)
+stream_consumer_eof(struct cork_stream_consumer* vself)
 {
     return 0;
 }
 
 static void
-stream_consumer__free(struct cork_stream_consumer* vself)
+stream_consumer_free(struct cork_stream_consumer* vself)
 {
     struct stream_consumer* self =
             cork_container_of(vself, struct stream_consumer, parent);
@@ -158,9 +140,9 @@ struct cork_stream_consumer*
 stream_consumer_new(FILE* fp, bool should_close)
 {
     struct stream_consumer* self = cork_new(struct stream_consumer);
-    self->parent.data = stream_consumer__data;
-    self->parent.eof = stream_consumer__eof;
-    self->parent.free = stream_consumer__free;
+    self->parent.data = stream_consumer_data;
+    self->parent.eof = stream_consumer_eof;
+    self->parent.free = stream_consumer_free;
     self->fp = fp;
     self->should_close = should_close;
     return &self->parent;
@@ -172,7 +154,7 @@ stream_consumer_new(FILE* fp, bool should_close)
  */
 
 static void
-clog_stream_handler__free(struct clog_handler* vself)
+clog_stream_handler_free(struct clog_handler* vself)
 {
     struct clog_stream_handler* self =
             cork_container_of(vself, struct clog_stream_handler, parent);
@@ -189,9 +171,8 @@ clog_stream_handler_new_consumer(struct cork_stream_consumer* consumer,
                                  const char* fmt)
 {
     struct clog_stream_handler* self = cork_new(struct clog_stream_handler);
-    self->parent.annotation = clog_stream_handler__annotation;
-    self->parent.message = clog_stream_handler__message;
-    self->parent.free = clog_stream_handler__free;
+    self->parent.handle = clog_stream_handler_handle;
+    self->parent.free = clog_stream_handler_free;
     self->consumer = consumer;
     self->active_thread = CORK_THREAD_NONE;
     cork_buffer_init(&self->buf);
@@ -200,7 +181,7 @@ clog_stream_handler_new_consumer(struct cork_stream_consumer* consumer,
     return &self->parent;
 
 error:
-    clog_stream_handler__free(&self->parent);
+    clog_stream_handler_free(&self->parent);
     return NULL;
 }
 

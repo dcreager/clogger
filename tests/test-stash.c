@@ -15,7 +15,6 @@
 
 #include "clogger/api.h"
 #include "clogger/fields.h"
-#include "clogger/helpers/fields.h"
 #include "clogger/stash.h"
 
 #include "helpers.h"
@@ -35,23 +34,29 @@ START_TEST(test_stash)
     struct clog_handler* handler = clog_stashing_handler_new(stash);
     clog_handler_push_process(handler);
 
-    cloge_critical ("Critical event") {
-        clf(field1, string, "hello");
+    cloge_critical {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Critical event");
     }
-    cloge_error ("Error event") {
-        clf(field1, string, "hello");
+    cloge_error {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Error event");
     }
-    cloge_warning ("Warning event") {
-        clf(field1, string, "hello");
+    cloge_warning {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Warning event");
     }
-    cloge_notice ("Notice event") {
-        clf(field1, string, "hello");
+    cloge_notice {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Notice event");
     }
-    cloge_info ("Info event") {
-        clf(field1, string, "hello");
+    cloge_info {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Info event");
     }
-    cloge_debug ("Debug event") {
-        clf(field1, string, "hello");
+    cloge_debug {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Debug event");
     }
 
     ck_assert(clog_stash_contains_event(stash, "__message",
@@ -87,23 +92,29 @@ START_TEST(test_two_stashes)
     /* Because there are an even number of calls to bump_counter, the results
      * will be consistent: Critical, Warning, and Info will get true; Error,
      * Notice, and Debug will get false. */
-    cloge_critical ("Critical %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_critical {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Critical %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_error ("Error %s", bump_counter() ? "noooooo" : "event") {
-        clf(field1, string, "hello");
+    cloge_error {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Error %s", bump_counter() ? "noooooo" : "event");
     }
-    cloge_warning ("Warning %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_warning {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Warning %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_notice ("Notice %s", bump_counter() ? "noooooo":"event") {
-        clf(field1, string, "hello");
+    cloge_notice {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Notice %s", bump_counter() ? "noooooo":"event");
     }
-    cloge_info ("Info %s", bump_counter() ? "event" : "noooooo") {
-        clf(field1, string, "hello");
+    cloge_info {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Info %s", bump_counter() ? "event" : "noooooo");
     }
-    cloge_debug ("Debug %s", bump_counter() ? "noooooo" : "event") {
-        clf(field1, string, "hello");
+    cloge_debug {
+        clog_add_field(field1, string, "hello");
+        clog_set_message("Debug %s", bump_counter() ? "noooooo" : "event");
     }
 
     ck_assert(clog_stash_contains_event(stash1, "__message",

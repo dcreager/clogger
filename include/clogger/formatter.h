@@ -10,6 +10,8 @@
 #ifndef CLOGGER_FORMATTER_H
 #define CLOGGER_FORMATTER_H
 
+#include <stdarg.h>
+
 #include <libcork/core.h>
 #include <libcork/ds.h>
 
@@ -25,15 +27,9 @@ void
 clog_formatter_free(struct clog_formatter* fmt);
 
 void
-clog_formatter_start(struct clog_formatter* fmt);
-
-void
-clog_formatter_annotation(struct clog_formatter* fmt, const char* key,
-                          const char* value);
-
-void
-clog_formatter_finish(struct clog_formatter* fmt, struct clog_message* msg,
-                      struct cork_buffer* dest);
+clog_formatter_format_message(struct clog_formatter* fmt,
+                              struct cork_buffer* dest,
+                              struct clog_message* message);
 
 
 #endif /* CLOGGER_FORMATTER_H */

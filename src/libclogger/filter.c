@@ -7,6 +7,7 @@
  * ----------------------------------------------------------------------
  */
 
+#include <stdarg.h>
 #include <string.h>
 
 #include <libcork/core.h>
@@ -23,33 +24,20 @@ struct clog_keep_filter {
 };
 
 
-static bool
-clog_keep_filter_check_channel(struct clog_keep_filter* filter,
-                               const char* channel)
-{
-    return cork_hash_table_get(filter->channels, (void *) channel) != NULL;
-}
-
 static void
-clog_keep_filter__annotation(struct clog_handler* handler,
-                             struct clog_message* msg, const char* key,
-                             const char* value)
+clog_keep_filter__handle(struct clog_handler* handler,
+                         struct clog_message* message)
 {
     struct clog_keep_filter* filter =
             cork_container_of(handler, struct clog_keep_filter, parent);
-    if (clog_keep_filter_check_channel(filter, msg->channel)) {
-        clog_handler_annotation(handler->next, msg, key, value);
+    if (handler->next == NULL) {
+        return;
     }
-}
-
-static void
-clog_keep_filter__message(struct clog_handler* handler,
-                          struct clog_message* msg)
-{
-    struct clog_keep_filter* filter =
-            cork_container_of(handler, struct clog_keep_filter, parent);
-    if (clog_keep_filter_check_channel(filter, msg->channel)) {
-        clog_handler_message(handler->next, msg);
+    bool filter_passed =
+            (cork_hash_table_get(filter->channels, (void*) message->channel) !=
+             NULL);
+    if (filter_passed) {
+        clog_handler_handle(handler->next, message);
     }
 }
 
@@ -66,8 +54,7 @@ struct clog_keep_filter*
 clog_keep_filter_new(void)
 {
     struct clog_keep_filter* filter = cork_new(struct clog_keep_filter);
-    filter->parent.annotation = clog_keep_filter__annotation;
-    filter->parent.message = clog_keep_filter__message;
+    filter->parent.handle = clog_keep_filter__handle;
     filter->parent.free = clog_keep_filter__free;
     filter->channels = cork_string_hash_table_new(0, 0);
     cork_hash_table_set_free_key(filter->channels, (cork_free_f) cork_strfree);

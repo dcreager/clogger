@@ -7,8 +7,6 @@
  * ----------------------------------------------------------------------
  */
 
-#include <stdarg.h>
-
 #include <libcork/core.h>
 #include <libcork/ds.h>
 
@@ -16,21 +14,19 @@
 #include "clogger/fields.h"
 
 void
-clog_add_string_field(struct clog_message* msg, const char* key,
-                      const char* value)
+clog_message_add_string_field(struct clog_message* message,
+                              struct clog_string_field* field, const char* key,
+                              const char* value);
+
+void
+clog_printf_field_done(struct clog_message_field* vfield)
 {
-    clog_annotate_message(msg, key, value);
+    struct clog_printf_field* field =
+            cork_container_of(vfield, struct clog_printf_field, parent);
+    cork_buffer_done(&field->value);
 }
 
 void
-clog_add_printf_field(struct clog_message* msg, const char* key,
-                      const char* fmt, ...)
-{
-    struct cork_buffer buf = CORK_BUFFER_INIT();
-    va_list args;
-    va_start(args, fmt);
-    cork_buffer_vprintf(&buf, fmt, args);
-    va_end(args);
-    clog_annotate_message(msg, key, buf.buf);
-    cork_buffer_done(&buf);
-}
+clog_message_add_printf_field(struct clog_message* message,
+                              struct clog_printf_field* field, const char* key,
+                              const char* fmt, ...);

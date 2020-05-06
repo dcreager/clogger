@@ -25,14 +25,8 @@
 
 struct segment {
     void (*start)(struct segment* segment);
-
-    void (*annotation)(struct segment* segment, const char* key,
-                       const char* value);
-
-    void (*message)(struct segment* segment, struct clog_message* msg);
-
+    void (*message)(struct segment* segment, struct clog_message* message);
     void (*append)(struct segment* segment, struct cork_buffer* dest);
-
     void (*free)(struct segment* segment);
 };
 
@@ -47,7 +41,6 @@ struct annotation_segment {
     void (*annotation)(struct annotation_segment* segment,
                        struct cork_buffer* dest, const char* key,
                        const char* value);
-
     void (*free)(struct annotation_segment* segment);
 };
 
@@ -78,13 +71,7 @@ raw_segment_start(struct segment* vself)
 }
 
 static void
-raw_segment_annotation(struct segment* vself, const char* key,
-                       const char* value)
-{
-}
-
-static void
-raw_segment_message(struct segment* vself, struct clog_message* msg)
+raw_segment_message(struct segment* vself, struct clog_message* message)
 {
 }
 
@@ -110,7 +97,6 @@ raw_segment_new(struct clog_formatter* fmt, const char* content, size_t size)
 {
     struct raw_segment* self = cork_new(struct raw_segment);
     self->parent.start = raw_segment_start;
-    self->parent.annotation = raw_segment_annotation;
     self->parent.message = raw_segment_message;
     self->parent.append = raw_segment_append;
     self->parent.free = raw_segment_free;
@@ -144,35 +130,27 @@ msg_segment_start(struct segment* vself)
 }
 
 static void
-msg_segment_annotation(struct segment* vself, const char* key,
-                       const char* value)
-{
-}
-
-static void
-msg_segment_message(struct segment* vself, struct clog_message* msg)
+msg_segment_message(struct segment* vself, struct clog_message* message)
 {
     struct msg_segment* self =
             cork_container_of(vself, struct msg_segment, parent);
     switch (self->part) {
         case MSG_LEVEL:
-            cork_buffer_set_string(&self->value, clog_level_name(msg->level));
+            cork_buffer_set_string(&self->value,
+                                   clog_level_name(message->level));
             break;
 
         case MSG_LEVEL_FIXED:
-            cork_buffer_set_string(&self->value,
-                                   clog_level_name_fixed_width(msg->level));
+            cork_buffer_set_string(
+                    &self->value, clog_level_name_fixed_width(message->level));
             break;
 
         case MSG_CHANNEL:
-            cork_buffer_set_string(&self->value, msg->channel);
+            cork_buffer_set_string(&self->value, message->channel);
             break;
 
         case MSG_MESSAGE: {
-            va_list args;
-            va_copy(args, msg->args);
-            cork_buffer_vprintf(&self->value, msg->format, args);
-            va_end(args);
+            cork_buffer_set_string(&self->value, clog_message_message(message));
             break;
         }
 
@@ -203,7 +181,6 @@ msg_segment_new(struct clog_formatter* fmt, enum msg_part part)
 {
     struct msg_segment* self = cork_new(struct msg_segment);
     self->parent.start = msg_segment_start;
-    self->parent.annotation = msg_segment_annotation;
     self->parent.message = msg_segment_message;
     self->parent.append = msg_segment_append;
     self->parent.free = msg_segment_free;
@@ -344,25 +321,26 @@ var_segment_start(struct segment* vself)
 }
 
 static void
-var_segment_annotation(struct segment* vself, const char* key,
-                       const char* value)
+var_segment_message(struct segment* vself, struct clog_message* message)
 {
     struct var_segment* self =
             cork_container_of(vself, struct var_segment, parent);
-    if (strcmp(key, self->name) == 0) {
-        size_t i;
-        self->value_given = true;
-        for (i = 0; i < cork_array_size(&self->segments); i++) {
-            struct annotation_segment* segment =
-                    cork_array_at(&self->segments, i);
-            segment->annotation(segment, &self->value, key, value);
+    struct cork_dllist_item *curr;
+    struct cork_dllist_item *next;
+    struct clog_message_field* field;
+    cork_dllist_foreach (&message->fields, curr, next,
+                         struct clog_message_field, field, item) {
+        if (strcmp(field->key, self->name) == 0) {
+            size_t i;
+            self->value_given = true;
+            for (i = 0; i < cork_array_size(&self->segments); i++) {
+                struct annotation_segment* segment =
+                        cork_array_at(&self->segments, i);
+                segment->annotation(segment, &self->value, field->key,
+                                    field->value);
+            }
         }
     }
-}
-
-static void
-var_segment_message(struct segment* vself, struct clog_message* msg)
-{
 }
 
 static void
@@ -401,7 +379,6 @@ var_segment_new(struct clog_formatter* fmt, const char* default_value,
 {
     struct var_segment* self = cork_new(struct var_segment);
     self->parent.start = var_segment_start;
-    self->parent.annotation = var_segment_annotation;
     self->parent.message = var_segment_message;
     self->parent.append = var_segment_append;
     self->parent.free = var_segment_free;
@@ -441,23 +418,24 @@ multi_segment_start(struct segment* vself)
 }
 
 static void
-multi_segment_annotation(struct segment* vself, const char* key,
-                         const char* value)
+multi_segment_message(struct segment* vself, struct clog_message* message)
 {
-    size_t i;
     struct multi_segment* self =
             cork_container_of(vself, struct multi_segment, parent);
-
+    struct cork_dllist_item *curr;
+    struct cork_dllist_item *next;
+    struct clog_message_field* field;
     self->value_given = true;
-    for (i = 0; i < cork_array_size(&self->segments); i++) {
-        struct annotation_segment* segment = cork_array_at(&self->segments, i);
-        segment->annotation(segment, &self->value, key, value);
+    cork_dllist_foreach (&message->fields, curr, next,
+                         struct clog_message_field, field, item) {
+        size_t i;
+        for (i = 0; i < cork_array_size(&self->segments); i++) {
+            struct annotation_segment* segment =
+                    cork_array_at(&self->segments, i);
+            segment->annotation(segment, &self->value, field->key,
+                                field->value);
+        }
     }
-}
-
-static void
-multi_segment_message(struct segment* vself, struct clog_message* msg)
-{
 }
 
 static void
@@ -495,7 +473,6 @@ multi_segment_new(struct clog_formatter* fmt, const char* default_value,
 {
     struct multi_segment* self = cork_new(struct multi_segment);
     self->parent.start = multi_segment_start;
-    self->parent.annotation = multi_segment_annotation;
     self->parent.message = multi_segment_message;
     self->parent.append = multi_segment_append;
     self->parent.free = multi_segment_free;
@@ -703,40 +680,16 @@ error:
 }
 
 void
-clog_formatter_start(struct clog_formatter* self)
+clog_formatter_format_message(struct clog_formatter* self,
+                              struct cork_buffer* dest,
+                              struct clog_message* message)
 {
     size_t i;
-    for (i = 0; i < cork_array_size(&self->segments); i++) {
-        struct segment* segment = cork_array_at(&self->segments, i);
-        segment->start(segment);
-    }
-}
-
-void
-clog_formatter_annotation(struct clog_formatter* self, const char* key,
-                          const char* value)
-{
-    size_t i;
-    for (i = 0; i < cork_array_size(&self->segments); i++) {
-        struct segment* segment = cork_array_at(&self->segments, i);
-        segment->annotation(segment, key, value);
-    }
-}
-
-void
-clog_formatter_finish(struct clog_formatter* self, struct clog_message* msg,
-                      struct cork_buffer* dest)
-{
-    size_t i;
-
-    for (i = 0; i < cork_array_size(&self->segments); i++) {
-        struct segment* segment = cork_array_at(&self->segments, i);
-        segment->message(segment, msg);
-    }
-
     cork_buffer_clear(dest);
     for (i = 0; i < cork_array_size(&self->segments); i++) {
         struct segment* segment = cork_array_at(&self->segments, i);
+        segment->start(segment);
+        segment->message(segment, message);
         segment->append(segment, dest);
     }
 }

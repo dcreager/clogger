@@ -27,6 +27,14 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: true
 DerivePointerAlignment: false
 DisableFormat: false
 ExperimentalAutoDetectBinPacking: false
+ForEachMacros:
+  - cloge_critical
+  - cloge_debug
+  - cloge_error
+  - cloge_info
+  - cloge_notice
+  - cloge_warning
+  - cork_dllist_foreach
 IncludeCategories:
   - Regex:    '^<.*\.h>'
     Priority: 1
