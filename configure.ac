@@ -5,7 +5,7 @@
 # ------------------------------------------------------------------------------
 
 AC_INIT([clogger],
-        m4_esyscmd([build-aux/calculate version .version-stamp]),
+        m4_esyscmd([build-aux/calculate version . .version-stamp]),
         [info@libcork.io])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
