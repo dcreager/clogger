@@ -274,4 +274,14 @@ _clog_process_message(struct clog_message* message, const char* fmt, ...)
         CORK_ATTR_PRINTF(2, 3);
 
 
+/* clang-format off */
+#define cloge_message_fields                                                   \
+    for (bool __continue = true; __continue;)                                  \
+    for (struct clog_message_fields __field_list; __continue;)                 \
+    for (clog_message_fields_init(&__field_list); __continue;)                 \
+    for (struct clog_message_fields* __fields = &__field_list; __continue;)    \
+    for (; __continue; __continue = false)
+/* clang-format on */
+
+
 #endif /* CLOGGER_API_H */

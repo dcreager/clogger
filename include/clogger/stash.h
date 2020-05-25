@@ -29,4 +29,11 @@ clog_stash_contains_event(const struct clog_stash* stash, ...);
 struct clog_handler*
 clog_stashing_handler_new(struct clog_stash* stash);
 
+#define clog_stash_contains_message(stash)                                     \
+    clog_stash_contains_message_fields((stash), __fields)
+
+bool
+clog_stash_contains_message_fields(const struct clog_stash* stash,
+                                   struct clog_message_fields* fields);
+
 #endif /* CLOGGER_STASH_H */
