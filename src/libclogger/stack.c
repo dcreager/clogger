@@ -131,6 +131,20 @@ void
 clog_message_field_done(struct clog_message_field* field);
 
 void
+clog_message_fields_init(struct clog_message_fields* fields);
+
+void
+clog_message_fields_push(struct clog_message_fields* fields,
+                         struct clog_message_field* field);
+
+void
+clog_message_fields_pop(struct clog_message_fields* fields,
+                        struct clog_message_field* field);
+
+void
+clog_message_fields_done(struct clog_message_fields* fields);
+
+void
 clog_message_init(struct clog_message* message, enum clog_level level,
                   const char* channel);
 

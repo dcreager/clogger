@@ -67,10 +67,57 @@ clog_message_field_done(struct clog_message_field* field)
     }
 }
 
+struct clog_message_fields {
+    struct cork_dllist fields;
+};
+
+CORK_INLINE
+void
+clog_message_fields_init(struct clog_message_fields* fields)
+{
+    cork_dllist_init(&fields->fields);
+}
+
+CORK_INLINE
+void
+clog_message_fields_push(struct clog_message_fields* fields,
+                         struct clog_message_field* field)
+{
+    cork_dllist_add_to_tail(&fields->fields, &field->item);
+}
+
+CORK_INLINE
+void
+clog_message_fields_pop(struct clog_message_fields* fields,
+                        struct clog_message_field* field)
+{
+    cork_dllist_remove(&field->item);
+    clog_message_field_done(field);
+}
+
+#define clog_message_fields_foreach(_fields, _field)                           \
+    for (bool __continue = true; __continue; __continue = false)               \
+    for (struct cork_dllist_item* __curr; __continue;)                         \
+    for (struct cork_dllist_item* __next; __continue;)                         \
+    for (; __continue; __continue = false)                                     \
+    cork_dllist_foreach(&(_fields)->fields, __curr, __next,                    \
+                        struct clog_message_field, _field, item)
+
+CORK_INLINE
+void
+clog_message_fields_done(struct clog_message_fields* fields)
+{
+    struct clog_message_field* field;
+    clog_message_fields_foreach (fields, field) {
+        clog_message_fields_pop(fields, field);
+    }
+}
+
+
 struct clog_message {
     enum clog_level level;
     const char* channel;
-    struct cork_dllist fields;
+    struct clog_message_fields fields;
     struct cork_buffer message;
     const char* fmt;
     va_list args;
@@ -83,7 +130,7 @@ clog_message_init(struct clog_message* message, enum clog_level level,
 {
     message->level = level;
     message->channel = channel;
-    cork_dllist_init(&message->fields);
+    clog_message_fields_init(&message->fields);
     cork_buffer_init(&message->message);
 }
 
@@ -92,21 +139,14 @@ void
 clog_message_pop_field(struct clog_message* message,
                        struct clog_message_field* field)
 {
-    cork_dllist_remove(&field->item);
-    clog_message_field_done(field);
+    clog_message_fields_pop(&message->fields, field);
 }
 
 CORK_INLINE
 void
 clog_message_done(struct clog_message* message)
 {
-    struct cork_dllist_item *curr;
-    struct cork_dllist_item *next;
-    struct clog_message_field* field;
-    cork_dllist_foreach (&message->fields, curr, next,
-                         struct clog_message_field, field, item) {
-        clog_message_pop_field(message, field);
-    }
+    clog_message_fields_done(&message->fields);
     cork_buffer_done(&message->message);
 }
 
@@ -209,15 +249,14 @@ clog_handler_pop_thread(struct clog_handler *handler);
     for (const char* __channel = (channel); __continue; )                      \
     for (struct clog_message __message; __continue; )                          \
     for (clog_message_init(&__message, __level, __channel); __continue; )      \
-    for (int __i = 0; __i < 2; __i++)                                          \
-    if (__i == 1) {                                                            \
-        __continue = false;                                                    \
-    } else
+    for (CORK_ATTR_UNUSED struct clog_message_fields* __fields =               \
+            &__message.fields; __continue;)                                    \
+    for (; __continue; __continue = false)                                     \
 /* clang-format on */
 
 #define clog_add_field(field_name, field_type, ...)                            \
     struct clog_##field_type##_field __##field_name##_field;                   \
-    clog_message_add_##field_type##_field(&__message, &__##field_name##_field, \
+    clog_message_add_##field_type##_field(__fields, &__##field_name##_field,   \
                                           #field_name, __VA_ARGS__);
 
 #define clog_set_message(...)                                                  \

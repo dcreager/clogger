@@ -26,14 +26,14 @@ struct clog_string_field {
 
 CORK_INLINE
 void
-clog_message_add_string_field(struct clog_message* message,
+clog_message_add_string_field(struct clog_message_fields* fields,
                               struct clog_string_field* field, const char* key,
                               const char* value)
 {
     field->parent.key = key;
     field->parent.value = value;
     field->parent.done = NULL;
-    cork_dllist_add_to_tail(&message->fields, &field->parent.item);
+    clog_message_fields_push(fields, &field->parent);
 }
 
 
@@ -52,7 +52,7 @@ clog_printf_field_done(struct clog_message_field* field);
 CORK_INLINE
 CORK_ATTR_PRINTF(4, 5)
 void
-clog_message_add_printf_field(struct clog_message* message,
+clog_message_add_printf_field(struct clog_message_fields* fields,
                               struct clog_printf_field* field, const char* key,
                               const char* fmt, ...)
 {
@@ -64,7 +64,7 @@ clog_message_add_printf_field(struct clog_message* message,
     cork_buffer_vprintf(&field->value, fmt, args);
     va_end(args);
     field->parent.value = field->value.buf;
-    cork_dllist_add_to_tail(&message->fields, &field->parent.item);
+    clog_message_fields_push(fields, &field->parent);
 }
 
 

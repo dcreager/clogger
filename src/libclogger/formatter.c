@@ -325,11 +325,8 @@ var_segment_message(struct segment* vself, struct clog_message* message)
 {
     struct var_segment* self =
             cork_container_of(vself, struct var_segment, parent);
-    struct cork_dllist_item *curr;
-    struct cork_dllist_item *next;
     struct clog_message_field* field;
-    cork_dllist_foreach (&message->fields, curr, next,
-                         struct clog_message_field, field, item) {
+    clog_message_fields_foreach (&message->fields, field) {
         if (strcmp(field->key, self->name) == 0) {
             size_t i;
             self->value_given = true;
@@ -422,12 +419,9 @@ multi_segment_message(struct segment* vself, struct clog_message* message)
 {
     struct multi_segment* self =
             cork_container_of(vself, struct multi_segment, parent);
-    struct cork_dllist_item *curr;
-    struct cork_dllist_item *next;
     struct clog_message_field* field;
     self->value_given = true;
-    cork_dllist_foreach (&message->fields, curr, next,
-                         struct clog_message_field, field, item) {
+    clog_message_fields_foreach (&message->fields, field) {
         size_t i;
         for (i = 0; i < cork_array_size(&self->segments); i++) {
             struct annotation_segment* segment =
