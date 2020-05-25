@@ -150,8 +150,10 @@ annotate_handle(struct clog_handler *log, struct clog_message* message)
     if (log->next != NULL) {
         struct clog_string_field key1;
         struct clog_string_field key2;
-        clog_message_add_string_field(message, &key1, "key1", "value1");
-        clog_message_add_string_field(message, &key2, "key2", "value2");
+        clog_message_add_string_field(&message->fields, &key1, "key1",
+                                      "value1");
+        clog_message_add_string_field(&message->fields, &key2, "key2",
+                                      "value2");
         clog_handler_handle(log->next, message);
         clog_message_pop_field(message, &key2.parent);
         clog_message_pop_field(message, &key1.parent);

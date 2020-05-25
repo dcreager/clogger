@@ -55,7 +55,7 @@ struct clog_message_field {
     const char* key;
     const char* value;
     void (*done)(struct clog_message_field* field);
-    struct cork_dllist_item item;
+    struct clog_message_field* next;
 };
 
 CORK_INLINE
@@ -67,10 +67,53 @@ clog_message_field_done(struct clog_message_field* field)
     }
 }
 
+struct clog_message_fields {
+    struct clog_message_field* head;
+};
+
+CORK_INLINE
+void
+clog_message_fields_init(struct clog_message_fields* fields)
+{
+    fields->head = NULL;
+}
+
+CORK_INLINE
+void
+clog_message_fields_push(struct clog_message_fields* fields,
+                         struct clog_message_field* field)
+{
+    field->next = fields->head;
+    fields->head = field;
+}
+
+CORK_INLINE
+void
+clog_message_fields_pop(struct clog_message_fields* fields,
+                        struct clog_message_field* field)
+{
+    assert(fields->head == field);
+    fields->head = field->next;
+    clog_message_field_done(field);
+}
+
+CORK_INLINE
+void
+clog_message_fields_done(struct clog_message_fields* fields)
+{
+    struct clog_message_field* current;
+    struct clog_message_field* next;
+    for (current = fields->head; current != NULL; current = next) {
+        next = current->next;
+        clog_message_field_done(current);
+    }
+}
+
+
 struct clog_message {
     enum clog_level level;
     const char* channel;
-    struct cork_dllist fields;
+    struct clog_message_fields fields;
     struct cork_buffer message;
     const char* fmt;
     va_list args;
@@ -83,7 +126,7 @@ clog_message_init(struct clog_message* message, enum clog_level level,
 {
     message->level = level;
     message->channel = channel;
-    cork_dllist_init(&message->fields);
+    clog_message_fields_init(&message->fields);
     cork_buffer_init(&message->message);
 }
 
@@ -92,21 +135,14 @@ void
 clog_message_pop_field(struct clog_message* message,
                        struct clog_message_field* field)
 {
-    cork_dllist_remove(&field->item);
-    clog_message_field_done(field);
+    clog_message_fields_pop(&message->fields, field);
 }
 
 CORK_INLINE
 void
 clog_message_done(struct clog_message* message)
 {
-    struct cork_dllist_item *curr;
-    struct cork_dllist_item *next;
-    struct clog_message_field* field;
-    cork_dllist_foreach (&message->fields, curr, next,
-                         struct clog_message_field, field, item) {
-        clog_message_pop_field(message, field);
-    }
+    clog_message_fields_done(&message->fields);
     cork_buffer_done(&message->message);
 }
 
@@ -209,15 +245,14 @@ clog_handler_pop_thread(struct clog_handler *handler);
     for (const char* __channel = (channel); __continue; )                      \
     for (struct clog_message __message; __continue; )                          \
     for (clog_message_init(&__message, __level, __channel); __continue; )      \
-    for (int __i = 0; __i < 2; __i++)                                          \
-    if (__i == 1) {                                                            \
-        __continue = false;                                                    \
-    } else
+    for (CORK_ATTR_UNUSED struct clog_message_fields* __fields =               \
+            &__message.fields; __continue;)                                    \
+    for (; __continue; __continue = false)                                     \
 /* clang-format on */
 
 #define clog_add_field(field_name, field_type, ...)                            \
     struct clog_##field_type##_field __##field_name##_field;                   \
-    clog_message_add_##field_type##_field(&__message, &__##field_name##_field, \
+    clog_message_add_##field_type##_field(__fields, &__##field_name##_field,   \
                                           #field_name, __VA_ARGS__);
 
 #define clog_set_message(...)                                                  \
@@ -237,6 +272,16 @@ clog_handler_pop_thread(struct clog_handler *handler);
 void
 _clog_process_message(struct clog_message* message, const char* fmt, ...)
         CORK_ATTR_PRINTF(2, 3);
+
+
+/* clang-format off */
+#define cloge_message_fields                                                   \
+    for (bool __continue = true; __continue;)                                  \
+    for (struct clog_message_fields __field_list; __continue;)                 \
+    for (clog_message_fields_init(&__field_list); __continue;)                 \
+    for (struct clog_message_fields* __fields = &__field_list; __continue;)    \
+    for (; __continue; __continue = false)
+/* clang-format on */
 
 
 #endif /* CLOGGER_API_H */

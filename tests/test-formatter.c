@@ -82,8 +82,8 @@ test_message(struct clog_formatter *self, struct cork_buffer *dest,
     struct clog_string_field var1;
     struct clog_string_field var2;
     clog_message_init(&message, level, channel);
-    clog_message_add_string_field(&message, &var1, "var1", "value1");
-    clog_message_add_string_field(&message, &var2, "var2", "value2");
+    clog_message_add_string_field(&message.fields, &var1, "var1", "value1");
+    clog_message_add_string_field(&message.fields, &var2, "var2", "value2");
     message.fmt = fmt;
     va_start(message.args, fmt);
     clog_formatter_format_message(self, dest, &message);

@@ -64,6 +64,21 @@ START_TEST(test_stash)
     ck_assert(clog_stash_contains_event(stash, "field1", "hello", NULL));
     ck_assert(!clog_stash_contains_event(stash, "field1", "there", NULL));
 
+    cloge_message_fields {
+        clog_add_field(__message, string, "Critical event");
+        ck_assert(clog_stash_contains_message(stash));
+    }
+
+    cloge_message_fields {
+        clog_add_field(field1, string, "hello");
+        ck_assert(clog_stash_contains_message(stash));
+    }
+
+    cloge_message_fields {
+        clog_add_field(field1, string, "there");
+        ck_assert(!clog_stash_contains_message(stash));
+    }
+
     fail_if_error(clog_handler_pop_process(handler));
     clog_handler_free(handler);
     clog_stash_free(stash);

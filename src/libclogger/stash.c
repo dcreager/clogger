@@ -69,6 +69,23 @@ clog_stashed_event_matches(const struct clog_stashed_event* event, va_list args)
     }
 }
 
+static bool
+clog_stashed_event_matches_message_fields(
+        const struct clog_stashed_event* event,
+        struct clog_message_fields* fields)
+{
+    struct clog_message_field* field;
+    for (field = fields->head; field != NULL; field = field->next) {
+        const char* key = field->key;
+        const char* expected = field->value;
+        const char *actual = cork_hash_table_get(event->fields, key);
+        if (actual == NULL || strcmp(expected, actual) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void
 clog_stashed_event_add(struct clog_stashed_event* event, const char* key,
                        const char* value)
@@ -130,6 +147,20 @@ clog_stash_contains_event(const struct clog_stash* stash, ...)
     return false;
 }
 
+bool
+clog_stash_contains_message_fields(const struct clog_stash* stash,
+                                   struct clog_message_fields* fields)
+{
+    for (size_t i = 0; i < cork_array_size(&stash->events); i++) {
+        bool matches = clog_stashed_event_matches_message_fields(
+                cork_array_at(&stash->events, i), fields);
+        if (matches) {
+            return true;
+        }
+    }
+    return false;
+}
+
 struct clog_stashing_handler {
     struct clog_handler parent;
     struct clog_stash* stash;
@@ -142,11 +173,8 @@ clog_stashing_handler_handle(struct clog_handler* handler,
     struct clog_stashing_handler* self =
             cork_container_of(handler, struct clog_stashing_handler, parent);
     struct clog_stashed_event* event = clog_stashed_event_new();
-    struct cork_dllist_item *curr;
-    struct cork_dllist_item *next;
     struct clog_message_field* field;
-    cork_dllist_foreach (&message->fields, curr, next,
-                         struct clog_message_field, field, item) {
+    for (field = message->fields.head; field != NULL; field = field->next) {
         clog_stashed_event_add(event, field->key, field->value);
     }
     clog_stashed_event_add(event, "__message", clog_message_message(message));
