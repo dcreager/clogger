@@ -55,7 +55,7 @@ struct clog_message_field {
     const char* key;
     const char* value;
     void (*done)(struct clog_message_field* field);
-    struct cork_dllist_item item;
+    struct clog_message_field* next;
 };
 
 CORK_INLINE
@@ -68,14 +68,14 @@ clog_message_field_done(struct clog_message_field* field)
 }
 
 struct clog_message_fields {
-    struct cork_dllist fields;
+    struct clog_message_field* head;
 };
 
 CORK_INLINE
 void
 clog_message_fields_init(struct clog_message_fields* fields)
 {
-    cork_dllist_init(&fields->fields);
+    fields->head = NULL;
 }
 
 CORK_INLINE
@@ -83,7 +83,8 @@ void
 clog_message_fields_push(struct clog_message_fields* fields,
                          struct clog_message_field* field)
 {
-    cork_dllist_add_to_tail(&fields->fields, &field->item);
+    field->next = fields->head;
+    fields->head = field;
 }
 
 CORK_INLINE
@@ -91,25 +92,20 @@ void
 clog_message_fields_pop(struct clog_message_fields* fields,
                         struct clog_message_field* field)
 {
-    cork_dllist_remove(&field->item);
+    assert(fields->head == field);
+    fields->head = field->next;
     clog_message_field_done(field);
 }
-
-#define clog_message_fields_foreach(_fields, _field)                           \
-    for (bool __continue = true; __continue; __continue = false)               \
-    for (struct cork_dllist_item* __curr; __continue;)                         \
-    for (struct cork_dllist_item* __next; __continue;)                         \
-    for (; __continue; __continue = false)                                     \
-    cork_dllist_foreach(&(_fields)->fields, __curr, __next,                    \
-                        struct clog_message_field, _field, item)
 
 CORK_INLINE
 void
 clog_message_fields_done(struct clog_message_fields* fields)
 {
-    struct clog_message_field* field;
-    clog_message_fields_foreach (fields, field) {
-        clog_message_fields_pop(fields, field);
+    struct clog_message_field* current;
+    struct clog_message_field* next;
+    for (current = fields->head; current != NULL; current = next) {
+        next = current->next;
+        clog_message_field_done(current);
     }
 }
 

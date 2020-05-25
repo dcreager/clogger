@@ -143,7 +143,7 @@ clog_stashing_handler_handle(struct clog_handler* handler,
             cork_container_of(handler, struct clog_stashing_handler, parent);
     struct clog_stashed_event* event = clog_stashed_event_new();
     struct clog_message_field* field;
-    clog_message_fields_foreach (&message->fields, field) {
+    for (field = message->fields.head; field != NULL; field = field->next) {
         clog_stashed_event_add(event, field->key, field->value);
     }
     clog_stashed_event_add(event, "__message", clog_message_message(message));
