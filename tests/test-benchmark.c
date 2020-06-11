@@ -46,7 +46,8 @@ main(int argc, const char** argv)
             clog_add_field(field1, string, "value");
             clog_add_field(field2, string, "another value");
             clog_add_field(field3, string, "yet another value");
-            clog_set_message("Interesting things are%s happening",
+            clog_set_message("Interesting %s things are%s happening",
+                             clog_field_value(field1),
                              ((i % 2) == 0) ? "" : " not");
         }
     }

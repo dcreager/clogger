@@ -255,6 +255,8 @@ clog_handler_pop_thread(struct clog_handler *handler);
     clog_message_add_##field_type##_field(__fields, &__##field_name##_field,   \
                                           #field_name, __VA_ARGS__);
 
+#define clog_field_value(field_name) (__##field_name##_field.parent.value)
+
 #define clog_set_message(...)                                                  \
     do {                                                                       \
         _clog_process_message(&__message, __VA_ARGS__);                        \

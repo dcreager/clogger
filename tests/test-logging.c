@@ -52,7 +52,8 @@ generate_messages(void)
      * Notice, and Debug will get false. */
     cloge_critical {
         clog_add_field(field1, printf, "%s%s", "he", "llo");
-        clog_set_message("Critical %s", bump_counter() ? "event" : "noooooo");
+        clog_set_message("Critical %s %s", clog_field_value(field1),
+                         bump_counter() ? "event" : "noooooo");
     }
     cloge_error {
         clog_add_field(field1, string, "hello");
@@ -181,7 +182,7 @@ static const char* EXPECTED_01 =
         "[CRITICAL] test: Critical message\n"
         "[ERROR   ] test: Error message\n"
         "[WARNING ] test: Warning message\n"
-        "[CRITICAL] test: field1=hello Critical event\n"
+        "[CRITICAL] test: field1=hello Critical hello event\n"
         "[ERROR   ] test: field1=hello Error event\n"
         "[WARNING ] test: field1=hello Warning event\n";
 
@@ -209,7 +210,7 @@ static const char* EXPECTED_02 =
         "[NOTICE  ] test: Notice message\n"
         "[INFO    ] test: Info message\n"
         "[DEBUG   ] test: Debug message\n"
-        "[CRITICAL] test: field1=hello Critical event\n"
+        "[CRITICAL] test: field1=hello Critical hello event\n"
         "[ERROR   ] test: field1=hello Error event\n"
         "[WARNING ] test: field1=hello Warning event\n"
         "[NOTICE  ] test: field1=hello Notice event\n"
@@ -238,7 +239,7 @@ static const char* EXPECTED_annotate_01 =
         "[NOTICE  ] test: key1=value1 key2=value2 Notice message\n"
         "[INFO    ] test: key1=value1 key2=value2 Info message\n"
         "[DEBUG   ] test: key1=value1 key2=value2 Debug message\n"
-        "[CRITICAL] test: field1=hello key1=value1 key2=value2 Critical event\n"
+        "[CRITICAL] test: field1=hello key1=value1 key2=value2 Critical hello event\n"
         "[ERROR   ] test: field1=hello key1=value1 key2=value2 Error event\n"
         "[WARNING ] test: field1=hello key1=value1 key2=value2 Warning event\n"
         "[NOTICE  ] test: field1=hello key1=value1 key2=value2 Notice event\n"
@@ -270,7 +271,7 @@ static const char* EXPECTED_annotate_02 =
         "[NOTICE  ] test: Notice message\n"
         "[INFO    ] test: Info message\n"
         "[DEBUG   ] test: Debug message\n"
-        "[CRITICAL] test: field1=hello Critical event\n"
+        "[CRITICAL] test: field1=hello Critical hello event\n"
         "[ERROR   ] test: field1=hello Error event\n"
         "[WARNING ] test: field1=hello Warning event\n"
         "[NOTICE  ] test: field1=hello Notice event\n"
@@ -301,7 +302,7 @@ static const char* EXPECTED_ordering_01 =
         "[NOTICE  ] test: Notice message\n"
         "[INFO    ] test: Info message\n"
         "[DEBUG   ] test: Debug message\n"
-        "[CRITICAL] test: field1=hello Critical event\n"
+        "[CRITICAL] test: field1=hello Critical hello event\n"
         "[ERROR   ] test: field1=hello Error event\n"
         "[WARNING ] test: field1=hello Warning event\n"
         "[NOTICE  ] test: field1=hello Notice event\n"
