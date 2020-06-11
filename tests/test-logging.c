@@ -326,6 +326,19 @@ END_TEST
 
 
 /*-----------------------------------------------------------------------
+ * Empty handlers
+ */
+
+START_TEST(test_no_handlers)
+{
+    DESCRIBE_TEST;
+    clog_set_minimum_level(CLOG_LEVEL_DEBUG);
+    generate_messages();
+}
+END_TEST
+
+
+/*-----------------------------------------------------------------------
  * Testing harness
  */
 
@@ -341,6 +354,7 @@ test_suite()
     tcase_add_test(tc_process, test_annotate_01);
     tcase_add_test(tc_process, test_annotate_02);
     tcase_add_test(tc_process, test_ordering_01);
+    tcase_add_test(tc_process, test_no_handlers);
     suite_add_tcase(s, tc_process);
 
     TCase  *tc_thread = tcase_create("thread");
@@ -350,6 +364,7 @@ test_suite()
     tcase_add_test(tc_thread, test_annotate_01);
     tcase_add_test(tc_thread, test_annotate_02);
     tcase_add_test(tc_thread, test_ordering_01);
+    tcase_add_test(tc_thread, test_no_handlers);
     suite_add_tcase(s, tc_thread);
 
     return s;

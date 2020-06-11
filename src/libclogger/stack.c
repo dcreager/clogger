@@ -106,6 +106,7 @@ _clog_process_message(struct clog_message* message, const char* fmt, ...)
 {
     struct clog_handler* handler = clog_get_stack();
     if (handler == NULL) {
+        clog_message_done(message);
         return;
     }
     message->fmt = fmt;
