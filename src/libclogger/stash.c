@@ -155,9 +155,11 @@ clog_stash_contains_message_fields(const struct clog_stash* stash,
         bool matches = clog_stashed_event_matches_message_fields(
                 cork_array_at(&stash->events, i), fields);
         if (matches) {
+            clog_message_fields_done(fields);
             return true;
         }
     }
+    clog_message_fields_done(fields);
     return false;
 }
 

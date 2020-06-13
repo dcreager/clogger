@@ -75,6 +75,11 @@ START_TEST(test_stash)
     }
 
     cloge_message_fields {
+        clog_add_field(field1, printf, "%s%s", "he", "llo");
+        ck_assert(clog_stash_contains_message(stash));
+    }
+
+    cloge_message_fields {
         clog_add_field(field1, string, "there");
         ck_assert(!clog_stash_contains_message(stash));
     }
