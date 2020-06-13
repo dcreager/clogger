@@ -251,11 +251,12 @@ clog_handler_pop_thread(struct clog_handler *handler);
 /* clang-format on */
 
 #define clog_add_field(field_name, field_type, ...)                            \
-    struct clog_##field_type##_field __##field_name##_field;                   \
-    clog_message_add_##field_type##_field(__fields, &__##field_name##_field,   \
-                                          #field_name, __VA_ARGS__);
+    clog_##field_type##_field_type __##field_name##_field;                     \
+    CORK_ATTR_UNUSED struct clog_message_field* __##field_name##_parent =      \
+        clog_message_add_##field_type##_field(                                 \
+                __fields, &__##field_name##_field, #field_name, __VA_ARGS__);
 
-#define clog_field_value(field_name) (__##field_name##_field.parent.value)
+#define clog_field_value(field_name) __##field_name##_parent->value
 
 #define clog_set_message(...)                                                  \
     do {                                                                       \

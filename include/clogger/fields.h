@@ -24,8 +24,10 @@ struct clog_string_field {
     struct clog_message_field parent;
 };
 
+typedef struct clog_string_field clog_string_field_type;
+
 CORK_INLINE
-void
+struct clog_message_field*
 clog_message_add_string_field(struct clog_message_fields* fields,
                               struct clog_string_field* field, const char* key,
                               const char* value)
@@ -34,6 +36,7 @@ clog_message_add_string_field(struct clog_message_fields* fields,
     field->parent.value = value;
     field->parent.done = NULL;
     clog_message_fields_push(fields, &field->parent);
+    return &field->parent;
 }
 
 
@@ -46,12 +49,14 @@ struct clog_printf_field {
     struct cork_buffer value;
 };
 
+typedef struct clog_printf_field clog_printf_field_type;
+
 void
 clog_printf_field_done(struct clog_message_field* field);
 
 CORK_INLINE
 CORK_ATTR_PRINTF(4, 5)
-void
+struct clog_message_field*
 clog_message_add_printf_field(struct clog_message_fields* fields,
                               struct clog_printf_field* field, const char* key,
                               const char* fmt, ...)
@@ -65,6 +70,7 @@ clog_message_add_printf_field(struct clog_message_fields* fields,
     va_end(args);
     field->parent.value = field->value.buf;
     clog_message_fields_push(fields, &field->parent);
+    return &field->parent;
 }
 
 
